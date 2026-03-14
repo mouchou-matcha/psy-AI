@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: patient_history
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - The UID of the user
+    //   - date: string (required) - ISO 8601 date string
+    //   - summary: string (required) - Clinical summary
+    //   - insights: string (required) - JSON stringified array
+    //   - tree_data: string (required) - JSON stringified tree data
+    //   - clinical_data: string (required) - JSON stringified clinical data
+    //   - therapeutic_plan: string (required) - JSON stringified plan
+    //   - transcript: string (optional) - Raw session transcript
+    //   - anonymized_transcript: string (optional) - GDPR compliant transcript
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) ||
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('userId' in request.resource.data) ||
+        request.resource.data.userId == resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidPatientHistory(data) {
+      return hasOnlyAllowedFields(['userId', 'date', 'summary', 'insights', 'tree_data', 'clinical_data', 'therapeutic_plan', 'transcript', 'anonymized_transcript']) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             isValidDateString(data.date) &&
+             data.summary is string && data.summary.size() < 10000 &&
+             data.insights is string && data.insights.size() < 10000 &&
+             data.tree_data is string && data.tree_data.size() < 50000 &&
+             data.clinical_data is string && data.clinical_data.size() < 50000 &&
+             data.therapeutic_plan is string && data.therapeutic_plan.size() < 50000 &&
+             (!('transcript' in data) || (data.transcript is string && data.transcript.size() < 500000)) &&
+             (!('anonymized_transcript' in data) || (data.anonymized_transcript is string && data.anonymized_transcript.size() < 500000));
+    }
+
+    match /patient_history/{historyId} {
+      allow read: if isAuthenticated() && isDocOwner();
+      allow create: if isAuthenticated() && isValidPatientHistory(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isDocOwner() && isValidPatientHistory(request.resource.data) && uidNotModified();
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "PatientHistory": {
+      "title": "PatientHistory",
+      "description": "A session history for a patient",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the session"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Clinical summary of the session"
+        },
+        "insights": {
+          "type": "string",
+          "description": "JSON stringified array of insights"
+        },
+        "tree_data": {
+          "type": "string",
+          "description": "JSON stringified tree data"
+        },
+        "clinical_data": {
+          "type": "string",
+          "description": "JSON stringified clinical data"
+        },
+        "therapeutic_plan": {
+          "type": "string",
+          "description": "JSON stringified therapeutic plan"
+        },
+        "transcript": {
+          "type": "string",
+          "description": "Raw session transcript"
+        },
+        "anonymized_transcript": {
+          "type": "string",
+          "description": "GDPR compliant anonymized transcript"
+        }
+      },
+      "required": ["userId", "date", "summary", "insights", "tree_data", "clinical_data", "therapeutic_plan"]
+    }
+  },
+  "firestore": {
+    "patient_history/{historyId}": {
+      "schema": "PatientHistory",
+      "description": "History of patient sessions"
+    }
+  }
+}

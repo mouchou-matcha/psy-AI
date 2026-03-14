@@ -1,0 +1,749 @@
+import React, { useState, useEffect } from 'react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart } from 'lucide-react';
+import { useLiveAPI } from './hooks/useLiveAPI';
+import { TherapyTree } from './components/TherapyTree';
+import { auth, db } from './firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+
+interface SessionHistory {
+  id: string;
+  date: string;
+  summary: string;
+  insights: string;
+  tree_data: string;
+  clinical_data: string;
+  therapeutic_plan: string;
+}
+
+export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isIncisiveMode, setIsIncisiveMode] = useState(false);
+
+  const [history, setHistory] = useState<SessionHistory[]>([]);
+  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showTree, setShowTree] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthReady && user) {
+      const q = query(
+        collection(db, 'patient_history'),
+        where('userId', '==', user.uid),
+        orderBy('date', 'asc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const historyData: SessionHistory[] = [];
+        snapshot.forEach((doc) => {
+          historyData.push({ id: doc.id, ...doc.data() } as SessionHistory);
+        });
+        setHistory(historyData);
+      }, (err) => {
+        console.error("Firestore Error: ", err);
+      });
+      return () => unsubscribe();
+    } else {
+      setHistory([]);
+    }
+  }, [isAuthReady, user, isSaving]);
+
+  const handleGoogleLogin = async () => {
+    setAuthError('');
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setHistory([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isConnected && !isSaving) {
+      setHasStarted(false);
+    }
+  }, [isConnected, isSaving]);
+
+  // 1-hour timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
+      setTimeLeft(3600); // 60 minutes
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev !== null && prev <= 1) {
+            disconnect();
+            return null;
+          }
+          return prev !== null ? prev - 1 : null;
+        });
+      }, 1000);
+    } else {
+      setTimeLeft(null);
+    }
+    return () => clearInterval(interval);
+  }, [isConnected, disconnect]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // Handle start/stop
+  const toggleSession = async () => {
+    if (isConnected) {
+      await disconnect();
+    } else {
+      setHasStarted(true);
+      await connect();
+    }
+  };
+
+  const parseInsights = (insightsStr: string) => {
+    try {
+      const parsed = JSON.parse(insightsStr);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const parseTreeData = (treeDataStr: string) => {
+    try {
+      const parsed = JSON.parse(treeDataStr);
+      return parsed && parsed.nodes ? parsed : { nodes: [], links: [] };
+    } catch {
+      return { nodes: [], links: [] };
+    }
+  };
+
+  const parseClinicalData = (dataStr: string) => {
+    try {
+      return JSON.parse(dataStr) || {};
+    } catch {
+      return {};
+    }
+  };
+
+  const parsePlanData = (planStr: string) => {
+    try {
+      return JSON.parse(planStr) || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Get the latest tree data to show at the top of the history
+  const latestTreeData = history.length > 0 ? parseTreeData(history[history.length - 1].tree_data) : { nodes: [], links: [] };
+  const latestClinicalData = history.length > 0 ? parseClinicalData(history[history.length - 1].clinical_data) : {};
+  const latestPlanData = history.length > 0 ? parsePlanData(history[history.length - 1].therapeutic_plan) : null;
+
+  if (!isAuthReady) {
+    return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col md:flex-row font-sans">
+      
+      {/* Sidebar / Auth Panel */}
+      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-zinc-800 bg-zinc-900/30 p-6 flex flex-col">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+            <Brain className="w-5 h-5 text-emerald-500" />
+          </div>
+          <h1 className="text-xl font-medium tracking-tight">PsychoIA</h1>
+        </div>
+
+        {user ? (
+          <div className="flex flex-col flex-1">
+            <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
+                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-zinc-400" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-200">{user.displayName || user.email}</p>
+                  <p className="text-xs text-zinc-500">Patient connecté</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
+              >
+                <LogOut className="w-4 h-4" /> Déconnexion
+              </button>
+            </div>
+
+            <div className="flex-1">
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Vos données</h3>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setShowHistory(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Historique</span>
+                  </div>
+                  <span className="text-xs bg-zinc-800 px-2 py-1 rounded-md text-zinc-400">{history.length}</span>
+                </button>
+                <button 
+                  onClick={() => setShowTree(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Network className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Arbre Thérapeutique</span>
+                  </div>
+                </button>
+                <button 
+                  onClick={() => setShowPlan(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Plan Thérapeutique</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Personnalité de l'IA Toggle */}
+              <div className="mt-6 pt-6 border-t border-zinc-800/50">
+                <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setIsIncisiveMode(false)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-zinc-400 hover:bg-zinc-800/50 border border-transparent'}`}
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Empathique</span>
+                  </button>
+                  <button
+                    onClick={() => setIsIncisiveMode(true)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-zinc-400 hover:bg-zinc-800/50 border border-transparent'}`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Électrochoc</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Bilan Inline Section */}
+              {latestClinicalData?.recommended_therapy?.type && (
+                <div className="mt-6 pt-6 border-t border-zinc-800/50">
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Type de professionnel conseillé</h3>
+                  <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Compass className="w-4 h-4 text-indigo-400" />
+                        <span className="text-sm font-bold text-indigo-300">
+                          {latestClinicalData.recommended_therapy.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3" title={latestClinicalData.recommended_therapy.reason}>
+                        {latestClinicalData.recommended_therapy.reason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5">
+              <h2 className="text-lg font-medium text-zinc-100 mb-1">
+                Connexion
+              </h2>
+              <p className="text-xs text-zinc-400 mb-6">
+                Accédez à votre dossier personnel.
+              </p>
+
+              <div className="space-y-4">
+                {authError && <p className="text-xs text-red-400">{authError}</p>}
+
+                <button 
+                  onClick={handleGoogleLogin}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Se connecter avec Google
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+        
+        <div className="max-w-md w-full flex flex-col items-center space-y-12">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center p-4 bg-zinc-900 rounded-full mb-4 ring-1 ring-zinc-800 shadow-xl">
+              <Brain className="w-10 h-10 text-emerald-400" />
+            </div>
+            <h1 className="text-xl font-medium tracking-tight text-zinc-100">
+              Psychologue IA
+            </h1>
+            <p className="text-zinc-400 text-sm max-w-xs mx-auto leading-relaxed">
+              Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.
+            </p>
+            {!user && (
+              <p className="text-xs text-amber-500/80 bg-amber-500/10 py-2 px-4 rounded-full border border-amber-500/20 inline-block mt-4">
+                Connectez-vous pour commencer une séance et sauvegarder votre dossier.
+              </p>
+            )}
+            {history.length > 0 && !hasStarted && (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4 md:hidden">
+                <button 
+                  onClick={() => setShowHistory(true)}
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                >
+                  <User className="w-4 h-4 mr-2 text-emerald-500" />
+                  Historique ({history.length})
+                </button>
+                <button 
+                  onClick={() => setShowTree(true)}
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                >
+                  <Network className="w-4 h-4 mr-2 text-indigo-500" />
+                  Arbre Thérapeutique
+                </button>
+                <button 
+                  onClick={() => setShowPlan(true)}
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                >
+                  <ClipboardList className="w-4 h-4 mr-2 text-amber-500" />
+                  Plan
+                </button>
+              </div>
+            )}
+
+            {/* Mobile Bilan Inline Section */}
+            {history.length > 0 && !hasStarted && latestClinicalData?.recommended_therapy?.type && (
+              <div className="md:hidden mt-6 w-full max-w-xs mx-auto">
+                <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 text-center">Type de professionnel conseillé</h3>
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Compass className="w-4 h-4 text-indigo-400" />
+                    <span className="text-sm font-bold text-indigo-300">
+                      {latestClinicalData.recommended_therapy.type}
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                    {latestClinicalData.recommended_therapy.reason}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+        {/* Status Indicator */}
+        <div className="flex flex-col items-center justify-center h-48 w-full relative">
+          {isConnected ? (
+            <div className="relative flex items-center justify-center">
+              {/* Pulsing background when speaking */}
+              {isSpeaking && (
+                <>
+                  <div className="absolute w-32 h-32 bg-emerald-500/20 rounded-full animate-ping" />
+                  <div className="absolute w-40 h-40 bg-emerald-500/10 rounded-full animate-pulse" />
+                </>
+              )}
+              <div 
+                onClick={() => {
+                  if (isSpeaking) interrupt();
+                }}
+                className={`group relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)] cursor-pointer hover:bg-red-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-zinc-800 ring-1 ring-zinc-700'}`}
+                title={isSpeaking ? "Cliquer pour interrompre l'IA" : ""}
+              >
+                {isSpeaking ? (
+                  <>
+                    <Activity className="w-10 h-10 text-zinc-950 group-hover:hidden" />
+                    <X className="w-10 h-10 text-zinc-950 hidden group-hover:block" />
+                  </>
+                ) : (
+                  <Activity className="w-10 h-10 text-emerald-500" />
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-zinc-900 ring-1 ring-zinc-800 flex items-center justify-center opacity-50">
+              {isSaving ? (
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+              ) : (
+                <MicOff className="w-8 h-8 text-zinc-600" />
+              )}
+            </div>
+          )}
+          
+          <div className="mt-8 text-sm font-medium tracking-wide text-zinc-500 uppercase flex flex-col items-center gap-2">
+            <span>{isConnected ? (isSpeaking ? 'Le psychologue parle...' : 'À votre écoute...') : isSaving ? 'Sauvegarde du dossier...' : 'Session terminée'}</span>
+            {timeLeft !== null && (
+              <span className="text-xs text-emerald-500/80 font-mono bg-emerald-500/10 px-2 py-1 rounded-md">
+                Temps restant : {formatTime(timeLeft)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="w-full p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Controls */}
+        <button
+          onClick={toggleSession}
+          disabled={isSaving || !user}
+          className={`group relative flex items-center justify-center w-full py-4 px-8 rounded-2xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+            isConnected
+              ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 ring-1 ring-zinc-800'
+              : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20'
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <span className="mr-2">Terminer la session</span>
+            </>
+          ) : (
+            <>
+              <Mic className="w-5 h-5 mr-2" />
+              <span>{isSaving ? 'Sauvegarde en cours...' : 'Commencer la session'}</span>
+            </>
+          )}
+        </button>
+
+        {/* Footer info */}
+        {!hasStarted && (
+          <p className="text-xs text-zinc-600 text-center max-w-xs">
+            Assurez-vous d'être dans un endroit calme. Vos échanges sont traités en temps réel. Un résumé clinique est sauvegardé pour assurer le suivi.
+          </p>
+        )}
+        </div>
+      </div>
+
+      {/* History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+                <Brain className="w-5 h-5 mr-3 text-emerald-500" />
+                Votre Parcours Thérapeutique
+              </h2>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {history.length === 0 ? (
+                <p className="text-zinc-500 text-center py-8">Aucune session enregistrée pour le moment.</p>
+              ) : (
+                <>
+                  <div className="space-y-8">
+                    {history.slice().reverse().map((session) => {
+                      const insights = parseInsights(session.insights);
+                      const clinicalData = parseClinicalData(session.clinical_data);
+                      const planData = parsePlanData(session.therapeutic_plan);
+                      
+                      return (
+                        <div key={session.id} className="space-y-4">
+                      <div className="flex items-center text-sm font-medium text-zinc-400">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {new Date(session.date).toLocaleDateString('fr-FR', { 
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </div>
+                      
+                      <div className="bg-zinc-950/50 rounded-xl p-5 border border-zinc-800/50 space-y-4">
+                        <div>
+                          <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Résumé de la séance</h3>
+                          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                            {session.summary}
+                          </p>
+                        </div>
+                        
+                        {insights.length > 0 && (
+                          <div className="pt-4 border-t border-zinc-800/50">
+                            <h3 className="text-xs font-semibold text-emerald-500/80 uppercase tracking-wider mb-3 flex items-center">
+                              <Sparkles className="w-3 h-3 mr-1.5" />
+                              Prises de conscience (Insights)
+                            </h3>
+                            <ul className="space-y-2">
+                              {insights.map((insight: string, idx: number) => (
+                                <li key={idx} className="text-sm text-zinc-200 bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start">
+                                  <span className="text-emerald-500 mr-2 mt-0.5">•</span>
+                                  <span className="leading-relaxed">{insight}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Clinical Data Section */}
+                        {Object.keys(clinicalData).length > 0 && (
+                          <div className="pt-4 border-t border-zinc-800/50 space-y-4">
+                            <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider mb-3 flex items-center">
+                              <FileText className="w-3 h-3 mr-1.5" />
+                              Notes Cliniques (Dossier de transfert)
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {clinicalData.emotional_state && (
+                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50 md:col-span-2">
+                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                    <HeartPulse className="w-3 h-3 mr-1.5 text-rose-400" /> État Émotionnel
+                                  </h4>
+                                  <p className="text-sm text-zinc-300">{clinicalData.emotional_state}</p>
+                                </div>
+                              )}
+                              
+                              {clinicalData.symptoms && clinicalData.symptoms.length > 0 && (
+                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
+                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                    <Stethoscope className="w-3 h-3 mr-1.5" /> Symptômes
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                    {clinicalData.symptoms.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {clinicalData.triggers && clinicalData.triggers.length > 0 && (
+                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
+                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                    <AlertTriangle className="w-3 h-3 mr-1.5" /> Déclencheurs
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                    {clinicalData.triggers.map((t: string, i: number) => <li key={i}>{t}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+
+                            {clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0 && (
+                              <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
+                                <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                  <ShieldCheck className="w-3 h-3 mr-1.5" /> Mécanismes de défense / adaptation
+                                </h4>
+                                <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                  {clinicalData.defense_mechanisms.map((d: string, i: number) => <li key={i}>{d}</li>)}
+                                </ul>
+                              </div>
+                            )}
+
+                            {clinicalData.risk_assessment && (
+                              <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
+                                <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                  <AlertTriangle className="w-3 h-3 mr-1.5 text-orange-400" /> Évaluation des risques
+                                </h4>
+                                <p className="text-sm text-zinc-300">{clinicalData.risk_assessment}</p>
+                              </div>
+                            )}
+
+                            {clinicalData.recommended_therapy?.type && (
+                              <div className="bg-indigo-500/10 rounded-lg p-3 border border-indigo-500/20 md:col-span-2">
+                                <h4 className="text-xs font-medium text-indigo-400 flex items-center mb-2">
+                                  <Compass className="w-3 h-3 mr-1.5" /> Recommandation Thérapeutique
+                                </h4>
+                                <p className="text-sm font-bold text-indigo-300">{clinicalData.recommended_therapy.type}</p>
+                                <p className="text-sm text-indigo-200/80 mt-1 leading-relaxed">{clinicalData.recommended_therapy.reason}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Therapeutic Plan Section */}
+                        {planData && planData.focus && (
+                          <div className="pt-4 border-t border-zinc-800/50 space-y-4">
+                            <h3 className="text-xs font-semibold text-amber-500/80 uppercase tracking-wider mb-3 flex items-center">
+                              <Target className="w-3 h-3 mr-1.5" />
+                              Plan d'Action
+                            </h3>
+                            
+                            <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/10">
+                              <h4 className="text-sm font-medium text-amber-400 mb-2">Objectif : {planData.focus}</h4>
+                              
+                              {planData.actions && planData.actions.length > 0 && (
+                                <ul className="space-y-2 mt-3">
+                                  {planData.actions.map((action: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-zinc-300 flex items-start">
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0 mt-0.5" />
+                                      <span>{action}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              
+                              {planData.adjustments && (
+                                <div className="mt-4 pt-3 border-t border-amber-500/10">
+                                  <p className="text-xs text-amber-500/70 uppercase tracking-wider mb-1">Ajustements</p>
+                                  <p className="text-sm text-zinc-400">{planData.adjustments}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tree Modal */}
+      {showTree && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+                <Network className="w-5 h-5 mr-3 text-indigo-500" />
+                Arbre Thérapeutique
+              </h2>
+              <button 
+                onClick={() => setShowTree(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {history.length === 0 ? (
+                <p className="text-zinc-500 text-center py-8">Aucun arbre disponible pour le moment.</p>
+              ) : (
+                <>
+                  {/* Global Therapy Tree */}
+                  {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
+                    <div>
+                      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4 flex items-center">
+                        <Network className="w-4 h-4 mr-2 text-emerald-500" />
+                        Cartographie des Problèmes
+                      </h3>
+                      <TherapyTree data={latestTreeData} />
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500 text-center py-8">L'arbre thérapeutique est en cours de construction.</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Therapeutic Plan Modal */}
+      {showPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+                <ClipboardList className="w-5 h-5 mr-3 text-amber-500" />
+                Plan Thérapeutique
+              </h2>
+              <button 
+                onClick={() => setShowPlan(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {history.length === 0 || !latestPlanData || !latestPlanData.focus ? (
+                <div className="text-center py-12">
+                  <Target className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+                  <p className="text-zinc-400">Aucun plan thérapeutique n'a encore été généré.</p>
+                  <p className="text-zinc-500 text-sm mt-2">Un plan sera proposé à la fin de votre prochaine séance.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                    <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center mb-3 relative z-10">
+                      <Target className="w-4 h-4 mr-2" /> Objectif Principal
+                    </h3>
+                    <p className="text-zinc-200 text-lg relative z-10 font-medium">
+                      {latestPlanData.focus}
+                    </p>
+                  </div>
+
+                  {latestPlanData.actions && latestPlanData.actions.length > 0 && (
+                    <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider flex items-center mb-4">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Actions & Exercices Recommandés
+                      </h3>
+                      <ul className="space-y-3">
+                        {latestPlanData.actions.map((action: string, idx: number) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="text-zinc-300 leading-relaxed">{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {latestPlanData.adjustments && (
+                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider flex items-center mb-3">
+                        <Activity className="w-4 h-4 mr-2 text-blue-400" /> Ajustements & Remarques
+                      </h3>
+                      <p className="text-zinc-300 leading-relaxed">
+                        {latestPlanData.adjustments}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="text-center mt-8">
+                    <p className="text-xs text-zinc-500">
+                      Ce plan sera évalué et ajusté avec vous lors de la prochaine séance.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
