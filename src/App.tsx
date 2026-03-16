@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart } from 'lucide-react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download } from 'lucide-react';
 import { useLiveAPI } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { jsPDF } from 'jspdf';
 
 interface SessionHistory {
   id: string;
@@ -29,6 +30,8 @@ export default function App() {
   const [showTree, setShowTree] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -77,6 +80,144 @@ export default function App() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    setSessionToDelete(sessionId);
+  };
+
+  const confirmDeleteSession = async () => {
+    if (sessionToDelete) {
+      try {
+        await deleteDoc(doc(db, 'patient_history', sessionToDelete));
+      } catch (err) {
+        console.error("Erreur lors de la suppression de la séance:", err);
+      } finally {
+        setSessionToDelete(null);
+      }
+    }
+  };
+
+  const handleDownloadPDF = (clinicalData: any, sessionDate: string, sessionId: string, summary: string, insights: string[]) => {
+    const doc = new jsPDF();
+    
+    const formattedDate = new Date(sessionDate).toLocaleDateString('fr-FR', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    let cursorY = margin;
+
+    // --- Header Design ---
+    // Top colored bar
+    doc.setFillColor(16, 185, 129); // emerald-500
+    doc.rect(0, 0, pageWidth, 6, 'F');
+    
+    // Light background for header area
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.rect(0, 6, pageWidth, 34, 'F');
+
+    cursorY = 22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text("Dossier Clinique", margin, cursorY);
+    
+    cursorY += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Séance du ${formattedDate}`, margin, cursorY);
+
+    // Separator line
+    cursorY += 10;
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.setLineWidth(0.5);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    
+    cursorY += 12;
+
+    const addSection = (title: string, content: string | string[]) => {
+      if (!content || (Array.isArray(content) && content.length === 0)) return;
+
+      // Check if we need a new page for the title
+      if (cursorY > pageHeight - 30) {
+        doc.addPage();
+        cursorY = margin + 10;
+      }
+      
+      // Section Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.text(title.toUpperCase(), margin, cursorY);
+      
+      // Small accent line under title
+      doc.setDrawColor(16, 185, 129); // emerald-500
+      doc.setLineWidth(0.5);
+      doc.line(margin, cursorY + 2, margin + 15, cursorY + 2);
+      
+      cursorY += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(51, 65, 85); // slate-700
+      const lineHeight = 5;
+
+      if (Array.isArray(content)) {
+        content.forEach(item => {
+          const splitLine = doc.splitTextToSize(`•  ${item}`, pageWidth - 2 * margin - 4);
+          if (cursorY + (splitLine.length * lineHeight) > pageHeight - margin) {
+            doc.addPage();
+            cursorY = margin + 10;
+          }
+          doc.text(splitLine, margin + 4, cursorY);
+          cursorY += splitLine.length * lineHeight + 2;
+        });
+      } else {
+        const textLines = doc.splitTextToSize(content, pageWidth - 2 * margin);
+        if (cursorY + (textLines.length * lineHeight) > pageHeight - margin) {
+          doc.addPage();
+          cursorY = margin + 10;
+        }
+        doc.text(textLines, margin, cursorY);
+        cursorY += textLines.length * lineHeight + 2;
+      }
+      cursorY += 8;
+    };
+
+    if (summary) addSection("Résumé de la séance", summary);
+    if (insights && insights.length > 0) addSection("Prises de conscience (Insights)", insights);
+    if (clinicalData.emotional_state) addSection("État émotionnel", clinicalData.emotional_state);
+    if (clinicalData.symptoms && clinicalData.symptoms.length > 0) addSection("Symptômes", clinicalData.symptoms);
+    if (clinicalData.triggers && clinicalData.triggers.length > 0) addSection("Déclencheurs", clinicalData.triggers);
+    if (clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0) addSection("Mécanismes de défense", clinicalData.defense_mechanisms);
+    if (clinicalData.risk_assessment) addSection("Évaluation des risques", clinicalData.risk_assessment);
+    
+    if (clinicalData.recommended_therapy?.type) {
+      addSection("Recommandation thérapeutique", [
+        `Type : ${clinicalData.recommended_therapy.type}`,
+        `Raison : ${clinicalData.recommended_therapy.reason}`
+      ]);
+    }
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); // slate-400
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(`Page ${i} sur ${pageCount} - Généré de manière sécurisée par PsychoIA`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    }
+
+    doc.save(`Dossier_Clinique_${sessionDate.split('T')[0]}.pdf`);
+    
+    setCopiedSessionId(sessionId);
+    setTimeout(() => setCopiedSessionId(null), 2000);
   };
 
   useEffect(() => {
@@ -165,11 +306,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans">
       
       {/* Sidebar / Auth Panel */}
-      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-zinc-800 bg-zinc-900/30 p-6 flex flex-col">
-        <div className="flex items-center gap-3 mb-8">
+      <div className="border-t md:border-t-0 md:border-r border-zinc-800 bg-zinc-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
+        <div className="hidden md:flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
             <Brain className="w-5 h-5 text-emerald-500" />
           </div>
@@ -178,7 +319,7 @@ export default function App() {
 
         {user ? (
           <div className="flex flex-col flex-1">
-            <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-6">
+            <div className="hidden md:block bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
                   {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-zinc-400" />}
@@ -273,7 +414,7 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col flex-1">
+          <div className="hidden md:flex flex-col flex-1">
             <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5">
               <h2 className="text-lg font-medium text-zinc-100 mb-1">
                 Connexion
@@ -299,8 +440,43 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+      <div className="flex flex-col items-center justify-center p-6 relative order-1 md:order-2 h-full overflow-hidden">
         
+        {/* Mobile Top Bar (Auth & Logo) */}
+        <div className="md:hidden w-full max-w-md mb-8 flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <Brain className="w-4 h-4 text-emerald-500" />
+            </div>
+            <span className="font-medium tracking-tight text-zinc-100">PsychoIA</span>
+          </div>
+          
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
+                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-4 h-4 text-zinc-400" />}
+                </div>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300"
+                title="Déconnexion"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleGoogleLogin}
+              className="bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
+            >
+              <LogIn className="w-3 h-3" />
+              Connexion
+            </button>
+          )}
+        </div>
+
         <div className="max-w-md w-full flex flex-col items-center space-y-12">
           {/* Header */}
           <div className="text-center space-y-4">
@@ -450,6 +626,35 @@ export default function App() {
       </div>
 
       {/* History Modal */}
+      {/* Delete Confirmation Modal */}
+      {sessionToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-xl font-medium text-zinc-100 mb-4 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-3 text-red-500" />
+              Supprimer la séance
+            </h3>
+            <p className="text-zinc-400 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette séance ? Cela supprimera également les ajouts à l'arbre thérapeutique qui y sont liés. Cette action est irréversible.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setSessionToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteSession}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showHistory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
@@ -479,12 +684,40 @@ export default function App() {
                       
                       return (
                         <div key={session.id} className="space-y-4">
-                      <div className="flex items-center text-sm font-medium text-zinc-400">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        {new Date(session.date).toLocaleDateString('fr-FR', { 
-                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
+                      <div className="flex items-start justify-between text-sm font-medium text-zinc-400">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {new Date(session.date).toLocaleDateString('fr-FR', { 
+                              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </div>
+                          <button
+                            onClick={() => handleDownloadPDF(clinicalData, session.date, session.id, session.summary, insights)}
+                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/50 w-fit"
+                            title="Télécharger le dossier clinique"
+                          >
+                            {copiedSessionId === session.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                <span className="text-emerald-500">Téléchargé</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Télécharger</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteSession(session.id)}
+                          className="text-zinc-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-400/10"
+                          title="Supprimer cette séance"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                       
                       <div className="bg-zinc-950/50 rounded-xl p-5 border border-zinc-800/50 space-y-4">
@@ -515,10 +748,12 @@ export default function App() {
                         {/* Clinical Data Section */}
                         {Object.keys(clinicalData).length > 0 && (
                           <div className="pt-4 border-t border-zinc-800/50 space-y-4">
-                            <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider mb-3 flex items-center">
-                              <FileText className="w-3 h-3 mr-1.5" />
-                              Notes Cliniques (Dossier de transfert)
-                            </h3>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider flex items-center">
+                                <FileText className="w-3 h-3 mr-1.5" />
+                                Notes Cliniques (Dossier de transfert)
+                              </h3>
+                            </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {clinicalData.emotional_state && (
@@ -606,6 +841,23 @@ export default function App() {
                                   ))}
                                 </ul>
                               )}
+
+                              {planData.hygiene_and_wellbeing && planData.hygiene_and_wellbeing.length > 0 && (
+                                <div className="mt-4 pt-3 border-t border-amber-500/10">
+                                  <h4 className="text-xs font-semibold text-rose-400/80 uppercase tracking-wider mb-2 flex items-center">
+                                    <Heart className="w-3 h-3 mr-1.5" />
+                                    Hygiène Mentale & Bien-être
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {planData.hygiene_and_wellbeing.map((item: string, idx: number) => (
+                                      <li key={idx} className="text-sm text-zinc-300 flex items-start">
+                                        <Sparkles className="w-4 h-4 text-rose-400 mr-2 flex-shrink-0 mt-0.5" />
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                               
                               {planData.adjustments && (
                                 <div className="mt-4 pt-3 border-t border-amber-500/10">
@@ -631,7 +883,7 @@ export default function App() {
       {/* Tree Modal */}
       {showTree && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-[95vw] h-[95vh] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-zinc-800">
               <h2 className="text-xl font-medium text-zinc-100 flex items-center">
                 <Network className="w-5 h-5 mr-3 text-indigo-500" />
@@ -645,19 +897,21 @@ export default function App() {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col space-y-8">
               {history.length === 0 ? (
                 <p className="text-zinc-500 text-center py-8">Aucun arbre disponible pour le moment.</p>
               ) : (
                 <>
                   {/* Global Therapy Tree */}
                   {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
-                    <div>
-                      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4 flex items-center">
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4 flex items-center shrink-0">
                         <Network className="w-4 h-4 mr-2 text-emerald-500" />
                         Cartographie des Problèmes
                       </h3>
-                      <TherapyTree data={latestTreeData} />
+                      <div className="flex-1 min-h-0">
+                        <TherapyTree data={latestTreeData} />
+                      </div>
                     </div>
                   ) : (
                     <p className="text-zinc-500 text-center py-8">L'arbre thérapeutique est en cours de construction.</p>
@@ -716,6 +970,22 @@ export default function App() {
                               {idx + 1}
                             </span>
                             <span className="text-zinc-300 leading-relaxed">{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {latestPlanData.hygiene_and_wellbeing && latestPlanData.hygiene_and_wellbeing.length > 0 && (
+                    <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-rose-400 uppercase tracking-wider flex items-center mb-4">
+                        <Heart className="w-4 h-4 mr-2 text-rose-500" /> Hygiène Mentale & Bien-être
+                      </h3>
+                      <ul className="space-y-3">
+                        {latestPlanData.hygiene_and_wellbeing.map((item: string, idx: number) => (
+                          <li key={idx} className="flex items-start">
+                            <Sparkles className="w-5 h-5 text-rose-400 mr-3 flex-shrink-0 mt-0.5" />
+                            <span className="text-zinc-300 leading-relaxed">{item}</span>
                           </li>
                         ))}
                       </ul>
