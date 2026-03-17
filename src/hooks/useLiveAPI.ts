@@ -317,7 +317,7 @@ RÈGLES VOCALES STRICTES :
 - Parle d'une voix de femme fluide, profonde, posée et très naturelle.
 - Reste très bref pour une réactivité maximale.`;
 - NE RÉSUME PAS et NE RÉPÈTE PAS ce que l'utilisateur vient de dire. Réponds directement.
-  GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.
+- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
