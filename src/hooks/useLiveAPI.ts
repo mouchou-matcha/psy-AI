@@ -150,7 +150,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         }
       }
 
-      let apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      let apiKey = import.meta.env.VITE_GEMINI_API_KEY ?? '';
       try {
         const configRes = await fetch('/api/config');
         if (configRes.ok) {
@@ -497,7 +497,7 @@ RÈGLES VOCALES STRICTES :
       try {
         const transcript = messagesRef.current.map(m => `${m.role}: ${m.text}`).join('\n');
         
-        let apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        let apiKey = import.meta.env.VITE_GEMINI_API_KEY ?? '';
         try {
           const configRes = await fetch('/api/config');
           if (configRes.ok) {
