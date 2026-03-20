@@ -386,8 +386,7 @@ RÈGLES VOCALES STRICTES :
               playbackQueueRef.current.push(buffer);
               playNextInQueue(); 
               }
-            }
-
+            
             // Handle interruption
             if (message.serverContent?.interrupted) {
               stopPlayback();
