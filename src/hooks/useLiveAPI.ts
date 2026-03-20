@@ -89,30 +89,6 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     }
   }, []);
 
-    isPlayingRef.current = true;
-    setIsSpeaking(true);
-
-    const buffer = playbackQueueRef.current.shift()!;
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-
-    const startTime = Math.max(ctx.currentTime, nextPlayTimeRef.current);
-    source.start(startTime);
-    nextPlayTimeRef.current = startTime + buffer.duration;
-
-    activeSourceNodesRef.current.push(source);
-
-    source.onended = () => {
-      activeSourceNodesRef.current = activeSourceNodesRef.current.filter((s) => s !== source);
-      if (playbackQueueRef.current.length === 0 && activeSourceNodesRef.current.length === 0) {
-        isPlayingRef.current = false;
-        setIsSpeaking(false);
-      } else {
-        playNextInQueue();
-      }
-    };
-  }, []);
 
   const stopPlayback = useCallback(() => {
     playbackQueueRef.current = [];
