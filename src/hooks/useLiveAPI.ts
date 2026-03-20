@@ -62,11 +62,32 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
 
-    if (playbackQueueRef.current.length === 0) {
-      isPlayingRef.current = false;
-      setIsSpeaking(false);
-      return;
+    while (playbackQueueRef.current.length > 0) {
+      const buffer = playbackQueueRef.current.shift()!;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      const startTime = Math.max(ctx.currentTime + 0.05, nextPlayTimeRef.current);
+      source.start(startTime);
+      nextPlayTimeRef.current = startTime + buffer.duration;
+
+      activeSourceNodesRef.current.push(source);
+
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        setIsSpeaking(true);
+      }
+
+      source.onended = () => {
+        activeSourceNodesRef.current = activeSourceNodesRef.current.filter((s) => s !== source);
+        if (activeSourceNodesRef.current.length === 0) {
+          isPlayingRef.current = false;
+          setIsSpeaking(false);
+          nextPlayTimeRef.current = 0;
+        }
+      };
     }
+  }, []);
 
     isPlayingRef.current = true;
     setIsSpeaking(true);
@@ -178,6 +199,9 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         audio: {
           channelCount: 1,
           sampleRate: 16000,
+          echoCancellation: true,   
+          noiseSuppression: true,   
+          autoGainControl: true, 
         },
       });
       streamRef.current = stream;
@@ -372,8 +396,7 @@ RÈGLES VOCALES STRICTES :
               buffer.getChannelData(0).set(float32Array);
 
               playbackQueueRef.current.push(buffer);
-              if (!isPlayingRef.current) {
-                playNextInQueue();
+              playNextInQueue(); 
               }
             }
 
