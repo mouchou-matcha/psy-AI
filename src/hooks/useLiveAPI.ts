@@ -168,6 +168,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
 
       // Initialize Audio Context (16kHz for recording)
       const ctx = new AudioContext({ sampleRate: 16000 });
+      await ctx.resume();
       audioContextRef.current = ctx;
 
       // Request Microphone Access
@@ -352,7 +353,7 @@ RÈGLES VOCALES STRICTES :
             });
 
             // Trigger the AI to speak immediately
-            sessionPromise.then((session) => {
+            sessionPromise.then((session: any) => {
               session.sendClientContent({ turns: "La séance commence. Bonjour, je t'écoute.", turnComplete: true });
             }).catch(() => {});
 
@@ -476,7 +477,8 @@ RÈGLES VOCALES STRICTES :
       setError(err.message || 'Failed to connect to microphone or API.');
       setIsConnected(false);
     }
-  }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode]);
+  }, [playNextInQueue, stopPlayback, disconnect, user, history, isIncisiveMode]);
+
 
   const disconnect = useCallback(async () => {
     if (sessionRef.current) {
