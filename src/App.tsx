@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp , Volume2} from 'lucide-react';
 import { useLiveAPI } from './hooks/useLiveAPI';
+
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
@@ -40,7 +41,7 @@ export default function App() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
     const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('psychoia_voice') || 'Zephyr');
-
+  const [isPreviewing, setIsPreviewing] = useState(false);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -153,6 +154,18 @@ const handleConsentSubmit = async () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+  const handlePreviewVoice = async () => {
+    if (isPreviewing) return;
+    setIsPreviewing(true);
+    try {
+      await previewVoice(voiceName);
+    } catch (err) {
+      console.error("Error previewing voice:", err);
+      alert("Impossible de lire l'aperçu vocal pour le moment.");
+    } finally {
+      setIsPreviewing(false);
+    }
   };
   
   const handleDeleteSession = async (sessionId: string) => {
