@@ -3,8 +3,8 @@ import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Net
 import { useLiveAPI } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth, deleteUser';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore, getDoc, setDoc, getDocs';
 import { jsPDF } from 'jspdf';
 
 interface SessionHistory {
