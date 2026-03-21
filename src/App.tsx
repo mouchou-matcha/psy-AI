@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp , Volume2} from 'lucide-react';
-import { useLiveAPI } from './hooks/useLiveAPI';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp , Volume2, Play} from 'lucide-react';
+import { useLiveAPI , previewVoice} from './hooks/useLiveAPI';
 
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
@@ -1150,6 +1150,7 @@ const handleConsentSubmit = async () => {
                                                                         <option value="Charon">Charon </option>
                                                                         <option value="Fenrir">Fenrir </option>
                                                                       </select>
+                                                      <button onClick={handlePreviewVoice} disabled={isPreviewing} className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Écouter un aperçu">{isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}</button>
                                                     </div>
                                     </div>
               <div className="space-y-4">
