@@ -489,6 +489,7 @@ const handleConsentSubmit = async () => {
                     </div>
                   </div>
                 </div>
+                    </div>
               )}
             </div>
           </div>
