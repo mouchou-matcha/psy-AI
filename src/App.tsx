@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download } from 'lucide-react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLiveAPI } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
@@ -31,6 +31,13 @@ export default function App() {
   const [showPlan, setShowPlan] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [consentTOS, setConsentTOS] = useState(false);
+  const [consentHealthData, setConsentHealthData] = useState(false);
+  const [expandedTOS, setExpandedTOS] = useState(false);
+  const [expandedHealth, setExpandedHealth] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,7 +47,24 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
-
+useEffect(() => {
+    const checkConsent = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (!userDoc.exists() || !userDoc.data().hasConsented) {
+            setShowConsentModal(true);
+          }
+        } catch (err) {
+          console.error("Error checking consent:", err);
+        }
+      }
+    };
+    if (isAuthReady) {
+      checkConsent();
+    }
+  }, [user, isAuthReady]);
+  
   useEffect(() => {
     if (isAuthReady && user) {
       const q = query(
@@ -81,7 +105,55 @@ export default function App() {
       console.error(err);
     }
   };
+const handleConsentSubmit = async () => {
+    if (user && consentTOS && consentHealthData) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          hasConsented: true,
+          consentedAt: new Date().toISOString()
+        }, { merge: true });
+        setShowConsentModal(false);
+      } catch (err) {
+        console.error("Error saving consent:", err);
+      }
+    }
+  };
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeletingAccount(true);
+    try {
+      const q = query(collection(db, 'patient_history'), where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      await deleteDoc(doc(db, 'users', user.uid));
+      await deleteUser(user);
+      
+      setHistory([]);
+      setShowSettings(false);
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      alert("Une erreur est survenue lors de la suppression de votre compte. Veuillez vous reconnecter et réessayer.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleDownloadData = () => {
+    const dataStr = JSON.stringify(history, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `psychoia_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  
   const handleDeleteSession = async (sessionId: string) => {
     setSessionToDelete(sessionId);
   };
@@ -329,13 +401,20 @@ export default function App() {
                   <p className="text-xs text-zinc-500">Patient connecté</p>
                 </div>
               </div>
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
-              >
-                <LogOut className="w-4 h-4" /> Déconnexion
-              </button>
-            </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
+                >
+                  <Settings className="w-4 h-4" /> Paramètres
+                </button>
+                <button 
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
+                >
+                  <LogOut className="w-4 h-4" /> Déconnexion
+                </button>
+              </div>
 
             <div className="flex-1">
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Vos données</h3>
@@ -458,6 +537,13 @@ export default function App() {
                   {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-4 h-4 text-zinc-400" />}
                 </div>
               </div>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300 mr-2"
+                title="Paramètres et Confidentialité"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
               <button 
                 onClick={handleLogout}
                 className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300"
@@ -1010,6 +1096,157 @@ export default function App() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+        {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+                <Settings className="w-5 h-5 mr-3 text-zinc-400" />
+                Paramètres & Confidentialité
+              </h2>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
+                
+                <button 
+                  onClick={handleDownloadData}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors border border-zinc-700/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Download className="w-5 h-5 text-blue-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-zinc-200 group-hover:text-zinc-100">Exporter mes données</p>
+                      <p className="text-xs text-zinc-500">Télécharger tout l'historique de vos séances au format JSON.</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre compte et toutes vos données ? Cette action est irréversible.")) {
+                      handleDeleteAccount();
+                    }
+                  }}
+                  disabled={isDeletingAccount}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-red-950/20 hover:bg-red-950/40 transition-colors border border-red-900/30 group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    {isDeletingAccount ? <Loader2 className="w-5 h-5 text-red-500 animate-spin" /> : <Trash2 className="w-5 h-5 text-red-500" />}
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-red-400 group-hover:text-red-300">Supprimer mon compte</p>
+                      <p className="text-xs text-red-500/70">Effacer définitivement toutes vos données de nos serveurs.</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consent Modal */}
+      {showConsentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-zinc-800">
+              <h2 className="text-2xl font-medium text-zinc-100 flex items-center">
+                <ShieldCheck className="w-6 h-6 mr-3 text-emerald-500" />
+                Consentement & Confidentialité
+              </h2>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              <p className="text-sm text-zinc-300 leading-relaxed">
+                Pour utiliser PsychoIA, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Nous prenons votre vie privée très au sérieux.
+              </p>
+
+              <div className="space-y-4">
+                <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        checked={consentTOS}
+                        onChange={(e) => setConsentTOS(e.target.checked)}
+                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedTOS(!expandedTOS)}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-zinc-200">Conditions Générales d'Utilisation</p>
+                        {expandedTOS ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                      </div>
+                      {expandedTOS && (
+                        <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                          <p><strong>1. Nature du Service :</strong> PsychoIA est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
+                          <p><strong>2. Urgences :</strong> PsychoIA n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
+                          <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte (hallucinations). Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
+                          <p><strong>4. Responsabilité :</strong> L'éditeur de PsychoIA décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques et périls.</p>
+                          <p><strong>5. Âge requis :</strong> L'utilisation de ce service est strictement réservée aux personnes majeures (18 ans et plus).</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        checked={consentHealthData}
+                        onChange={(e) => setConsentHealthData(e.target.checked)}
+                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedHealth(!expandedHealth)}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-zinc-200">Traitement des Données Sensibles (RGPD)</p>
+                        {expandedHealth ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                      </div>
+                      {expandedHealth && (
+                        <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                          <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant PsychoIA.</p>
+                          <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
+                          <p><strong>3. Sous-traitants :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage tiers (ex: Google). Vos données sont transmises de manière sécurisée et chiffrée pour générer les réponses, mais ne sont pas utilisées pour entraîner publiquement ces modèles.</p>
+                          <p><strong>4. Vos Droits :</strong> Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application intègre des fonctionnalités vous permettant d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique en un clic depuis les paramètres.</p>
+                          <p><strong>5. Durée de conservation :</strong> Vos données sont conservées uniquement tant que votre compte est actif. La suppression de votre compte entraîne l'effacement immédiat et irréversible de vos données de nos serveurs.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-zinc-800 flex justify-end gap-3">
+              <button 
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              >
+                Refuser et se déconnecter
+              </button>
+              <button 
+                onClick={handleConsentSubmit}
+                disabled={!consentTOS || !consentHealthData}
+                className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                J'accepte
+              </button>
             </div>
           </div>
         </div>
