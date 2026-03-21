@@ -515,7 +515,7 @@ const handleConsentSubmit = async () => {
               </div>
             </div>
           </div>
-        )}
+                )}
       </div>
 
       {/* Main Content */}
