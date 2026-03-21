@@ -596,7 +596,7 @@ Transcription:\n${transcript}`,
         }
         const result = JSON.parse(responseText);
 
-        await addDoc(collection(db, 'patient_history'), {
+       await addDoc(collection(db, 'patient_history'), {
           userId: user.uid,
           date: new Date().toISOString(),
           summary: result.summary || 'Résumé non disponible.',
@@ -604,8 +604,7 @@ Transcription:\n${transcript}`,
           tree_data: JSON.stringify(result.tree_data || currentTree),
           clinical_data: JSON.stringify(result.clinical_data || {}),
           therapeutic_plan: JSON.stringify(result.therapeutic_plan || {}),
-          transcript: transcript,
-          anonymized_transcript: result.anonymized_transcript || transcript
+          anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
         });
 
       } catch (e: any) {
