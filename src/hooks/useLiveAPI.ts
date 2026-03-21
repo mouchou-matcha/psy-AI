@@ -39,7 +39,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return window.btoa(binary);
 }
 
-export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false) {
+export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr') {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const messagesRef = useRef<{ role: string; text: string }[]>([]);
@@ -337,7 +337,7 @@ RÈGLES VOCALES STRICTES :
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, // 'Kore' is a female voice
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } }, // 'Kore' is a female voice
           },
           systemInstruction: systemInstruction,
           outputAudioTranscription: {},
@@ -604,7 +604,7 @@ Transcription:\n${transcript}`,
           tree_data: JSON.stringify(result.tree_data || currentTree),
           clinical_data: JSON.stringify(result.clinical_data || {}),
           therapeutic_plan: JSON.stringify(result.therapeutic_plan || {}),
-          anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
+          anonymized_anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
         });
 
       } catch (e: any) {
