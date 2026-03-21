@@ -415,6 +415,7 @@ const handleConsentSubmit = async () => {
                   <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
               </div>
+        </div>
 
             <div className="flex-1">
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Vos données</h3>
