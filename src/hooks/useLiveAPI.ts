@@ -38,7 +38,69 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return window.btoa(binary);
 }
+export async function previewVoice(voiceName: string): Promise<void> {
+  try {
+    let apiKey = process.env.GEMINI_API_KEY;
+    try {
+      const configRes = await fetch('/api/config');
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.apiKey) {
+          apiKey = configData.apiKey;
+        }
+      }
+    } catch (e) {
+      console.error("Could not fetch config", e);
+    }
 
+    if (!apiKey) {
+      throw new Error("API key not found");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: "Bonjour, je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?",
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voiceName },
+          },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64Audio) {
+      const int16Array = base64ToInt16Array(base64Audio);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+      
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      const buffer = audioCtx.createBuffer(1, float32Array.length, 24000);
+      buffer.getChannelData(0).set(float32Array);
+      
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.start();
+      
+      return new Promise<void>((resolve) => {
+        source.onended = () => {
+          audioCtx.close();
+          resolve();
+        };
+      });
+    }
+  } catch (error) {
+    console.error("Error previewing voice:", error);
+    throw error;
+  }
+}
 export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr') {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
