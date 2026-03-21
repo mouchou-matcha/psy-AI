@@ -1131,11 +1131,11 @@ const handleConsentSubmit = async () => {
                                                                                           </div>
                                                                       </div>
                                                       <select value={voiceName} onChange={(e) => { setVoiceName(e.target.value); localStorage.setItem('psychoia_voice', e.target.value); }} className="w-full sm:w-auto bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg p-2">
-                                                                        <option value="Zephyr">Zephyr (Femme, Naturelle)</option>
-                                                                        <option value="Kore">Kore (Femme, Professionnelle)</option>
-                                                                        <option value="Puck">Puck (Homme, Amical)</option>
-                                                                        <option value="Charon">Charon (Homme, Calme)</option>
-                                                                        <option value="Fenrir">Fenrir (Homme, Assuré)</option>
+                                                                        <option value="Zephyr">Zephyr </option>
+                                                                        <option value="Kore">Kore </option>
+                                                                        <option value="Puck">Puck </option>
+                                                                        <option value="Charon">Charon </option>
+                                                                        <option value="Fenrir">Fenrir </option>
                                                                       </select>
                                                     </div>
                                     </div>
