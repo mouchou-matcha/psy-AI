@@ -58,8 +58,8 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(fields);
     }
 
-    function isValidPatientHistory(data) {
-      return hasOnlyAllowedFields(['userId', 'date', 'summary', 'insights', 'tree_data', 'clinical_data', 'therapeutic_plan', 'transcript', 'anonymized_transcript']) &&
+   function isValidPatientHistory(data) {
+      return hasOnlyAllowedFields(['userId', 'date', 'summary', 'insights', 'tree_data', 'clinical_data', 'therapeutic_plan', 'anonymized_transcript']) &&
              data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
              isValidDateString(data.date) &&
              data.summary is string && data.summary.size() < 10000 &&
@@ -67,10 +67,21 @@ service cloud.firestore {
              data.tree_data is string && data.tree_data.size() < 50000 &&
              data.clinical_data is string && data.clinical_data.size() < 50000 &&
              data.therapeutic_plan is string && data.therapeutic_plan.size() < 50000 &&
-             (!('transcript' in data) || (data.transcript is string && data.transcript.size() < 500000)) &&
              (!('anonymized_transcript' in data) || (data.anonymized_transcript is string && data.anonymized_transcript.size() < 500000));
     }
+function isValidUser(data) {
+      return hasOnlyAllowedFields(['hasConsented', 'consentedAt']) &&
+             data.hasConsented is bool &&
+             data.consentedAt is string &&
+             isValidDateString(data.consentedAt);
+    }
 
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
     match /patient_history/{historyId} {
       allow read: if isAuthenticated() && isDocOwner();
       allow create: if isAuthenticated() && isValidPatientHistory(request.resource.data) && request.resource.data.userId == request.auth.uid;
