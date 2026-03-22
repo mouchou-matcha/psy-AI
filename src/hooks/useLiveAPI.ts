@@ -41,7 +41,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 export async function previewVoice(voiceName: string): Promise<void> {
   try {
-    let apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
     try {
       const configRes = await fetch('/api/config');
       if (configRes.ok) {
@@ -212,7 +212,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         }
       }
 
-      let apiKey = process.env.GEMINI_API_KEY;
+      let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
       try {
         const configRes = await fetch('/api/config');
         if (configRes.ok) {
@@ -577,7 +577,7 @@ RÈGLES VOCALES STRICTES :
       try {
         const transcript = messagesRef.current.map(m => `${m.role}: ${m.text}`).join('\n');
         
-        let apiKey = process.env.GEMINI_API_KEY;
+        let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
         try {
           const configRes = await fetch('/api/config');
           if (configRes.ok) {
