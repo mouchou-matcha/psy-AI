@@ -168,7 +168,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     setIsSpeaking(false);
   }, []);
 
-  const connect = useCallback(async () => {
+  const disconnect = useCallback(async () => {
     try {
       setError(null);
       
@@ -542,7 +542,7 @@ RÈGLES VOCALES STRICTES :
   }, [playNextInQueue, stopPlayback, disconnect, user, history, isIncisiveMode]);
 
 
-  const disconnect = useCallback(async () => {
+  const connect = useCallback(async () => {
     if (sessionRef.current) {
       sessionRef.current.then((session: any) => session.close());
       sessionRef.current = null;
