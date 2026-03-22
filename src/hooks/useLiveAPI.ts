@@ -416,9 +416,21 @@ RÈGLES VOCALES STRICTES :
               return newMessages;
             });
 
-            // Trigger the AI to speak immediately
+            // Trigger the AI to speak after 1 second
             sessionPromise.then((session) => {
-              session.sendClientContent({ turns: "La séance commence. Bonjour, je t'écoute.", turnComplete: true });
+              setTimeout(() => {
+                try {
+                  session.sendClientContent({
+                    turns: [{
+                      role: "user",
+                      parts: [{ text: "La séance commence. Bonjour, je t'écoute." }]
+                    }],
+                    turnComplete: true
+                  });
+                } catch (e) {
+                  console.error("Error sending initial prompt:", e);
+                }
+              }, 1000);
             }).catch(() => {});
 
             // Start sending audio
