@@ -24,8 +24,8 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [isIncisiveMode, setIsIncisiveMode] = useState(false);
 
+  // 1. D'abord on déclare TOUS les états (States)
   const [history, setHistory] = useState<SessionHistory[]>([]);
-  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName);
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
@@ -40,10 +40,16 @@ export default function App() {
   const [expandedHealth, setExpandedHealth] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
-    const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('psychoia_voice') || 'Zephyr');
+  const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('psychoia_voice') || 'Zephyr');
   const [isPreviewing, setIsPreviewing] = useState(false);
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+
+  // 2. ENSUITE, on appelle le hook useLiveAPI qui utilise les variables ci-dessus
+  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(
+    user, 
+    history, 
+    isIncisiveMode, 
+    voiceName
+  );
       setUser(currentUser);
       setIsAuthReady(true);
     });
