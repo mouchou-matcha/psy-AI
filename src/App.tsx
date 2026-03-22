@@ -6,7 +6,7 @@ import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
-import { jsPDF } from 'jsPDF';
+import { jspdf } from 'jspdf';
 
 interface SessionHistory {
   id: string;
