@@ -6,7 +6,7 @@ import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
-import { jsPDF } from 'jspdf';
+import { jsPDF } from 'jsPDF';
 
 interface SessionHistory {
   id: string;
@@ -19,12 +19,11 @@ interface SessionHistory {
 }
 
 export default function App() {
+  // --- 1. DÉCLARATION DE TOUS LES ÉTATS (STATES) ---
   const [user, setUser] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isIncisiveMode, setIsIncisiveMode] = useState(false);
-
-  // 1. D'abord on déclare TOUS les états (States)
   const [history, setHistory] = useState<SessionHistory[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -43,20 +42,26 @@ export default function App() {
   const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('psychoia_voice') || 'Zephyr');
   const [isPreviewing, setIsPreviewing] = useState(false);
 
-  // 2. ENSUITE, on appelle le hook useLiveAPI qui utilise les variables ci-dessus
+  // --- 2. APPEL DU HOOK (APRES LES STATES) ---
   const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(
     user, 
     history, 
     isIncisiveMode, 
     voiceName
   );
+
+  // --- 3. LES EFFETS (EFFECTS) ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
-useEffect(() => {
+
+  useEffect(() => {
     const checkConsent = async () => {
+      // (La suite de ton code checkConsent continue ici...)
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
