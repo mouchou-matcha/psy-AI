@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { Brain, Heart, Leaf, Target } from 'lucide-react';
+import { Brain, Heart, Leaf, Target, X } from 'lucide-react';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
@@ -33,13 +33,13 @@ export function TherapyTree({ data }: { data: TreeData }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove(); // Clear previous render
 
-    // Color Palette
+    // Airbnb-inspired Color Palette
     const getColor = (type: string) => {
       switch (type) {
-        case 'root_cause': return '#e11d48'; // Rose
-        case 'emotion': return '#3b82f6'; // Blue
-        case 'symptom': return '#10b981'; // Emerald
-        default: return '#a1a1aa'; // Muted Zinc
+        case 'root_cause': return '#FF385C'; // Airbnb Red
+        case 'emotion': return '#00A699'; // Airbnb Teal
+        case 'symptom': return '#FFB400'; // Airbnb Yellow
+        default: return '#71717A'; // Zinc 500
       }
     };
 
@@ -61,33 +61,40 @@ export function TherapyTree({ data }: { data: TreeData }) {
     const links = data.links.map(d => ({ ...d }));
 
     // --- FORCES ---
-    // Adjusted for better spacing, preventing overlap, and improving readability
     const simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(180)) // Increased link distance
-      .force('charge', d3.forceManyBody().strength(-800)) // Stronger repulsion to spread nodes out
+      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(160))
+      .force('charge', d3.forceManyBody().strength(-1000)) // Strong repulsion for clean spacing
       .force('center', d3.forceCenter(0, 0))
-      .force('collide', d3.forceCollide().radius(90).iterations(2)) // Larger collision radius to protect labels from overlapping
-      .force('x', d3.forceX(0).strength(0.04)) // Gentle pull towards center X
-      .force('y', d3.forceY(0).strength(0.04)); // Gentle pull towards center Y
+      .force('collide', d3.forceCollide().radius(80).iterations(3))
+      .force('x', d3.forceX(0).strength(0.05))
+      .force('y', d3.forceY(0).strength(0.05));
 
-    // --- LINKS (Smooth Curves) ---
+    // --- LINKS (Clean Solid Lines) ---
     const link = g.append('g')
       .selectAll('path')
       .data(links)
       .join('path')
       .attr('fill', 'none')
-      .attr('stroke', 'rgba(255, 255, 255, 0.25)') // Semi-transparent white
+      .attr('stroke', '#3F3F46') // zinc-700
       .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '4 6'); // Dotted lines as requested
+      .style('transition', 'stroke 0.3s ease');
 
-    // Link Labels
-    const linkLabel = g.append('g')
-      .selectAll('text')
+    // Link Labels (Pill-shaped backgrounds)
+    const linkLabelGroup = g.append('g')
+      .selectAll('g')
       .data(links)
-      .join('text')
-      .attr('font-family', 'Inter, sans-serif')
-      .attr('font-size', '11px')
-      .attr('fill', '#a1a1aa')
+      .join('g');
+
+    // We use a simple text with a thick stroke for a halo effect (cleaner than rects in d3)
+    const linkLabel = linkLabelGroup.append('text')
+      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-size', '12px')
+      .attr('font-weight', '500')
+      .attr('fill', '#A1A1AA') // zinc-400
+      .attr('stroke', '#09090B') // zinc-950 halo
+      .attr('stroke-width', 4)
+      .attr('stroke-linejoin', 'round')
+      .attr('paint-order', 'stroke')
       .attr('text-anchor', 'middle')
       .text(d => d.label || '');
 
@@ -102,34 +109,29 @@ export function TherapyTree({ data }: { data: TreeData }) {
         .on('drag', dragged)
         .on('end', dragended));
 
-    // Outer ring
+    // Node Background (Solid Color, Airbnb style)
     node.append('circle')
-      .attr('r', 26)
-      .attr('fill', '#050505') // Dark center
-      .attr('stroke', d => getColor(d.type))
-      .attr('stroke-width', 2.5)
-      .attr('class', 'node-ring')
-      .style('transition', 'all 0.3s ease');
+      .attr('r', 28)
+      .attr('fill', d => getColor(d.type))
+      .attr('class', 'node-bg')
+      .style('filter', 'drop-shadow(0px 4px 12px rgba(0,0,0,0.4))')
+      .style('transition', 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)');
 
-    // Inner subtle ring (adds detail like the image)
+    // Inner white circle for contrast
     node.append('circle')
-      .attr('r', 18)
-      .attr('fill', 'none')
-      .attr('stroke', d => getColor(d.type))
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '2 4')
-      .attr('opacity', 0.5)
-      .attr('class', 'node-inner-ring')
-      .style('transition', 'all 0.3s ease');
+      .attr('r', 10)
+      .attr('fill', '#ffffff')
+      .attr('class', 'node-inner')
+      .style('transition', 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)');
 
     // Node Interactions
     node.on('mouseover', function(event, d) {
-      d3.select(this).select('.node-ring').attr('stroke-width', 4).attr('r', 28);
-      d3.select(this).select('.node-inner-ring').attr('r', 20);
+      d3.select(this).select('.node-bg').attr('r', 32).style('filter', 'drop-shadow(0px 8px 16px rgba(0,0,0,0.5))');
+      d3.select(this).select('.node-inner').attr('r', 12);
     })
     .on('mouseout', function(event, d) {
-      d3.select(this).select('.node-ring').attr('stroke-width', 2.5).attr('r', 26);
-      d3.select(this).select('.node-inner-ring').attr('r', 18);
+      d3.select(this).select('.node-bg').attr('r', 28).style('filter', 'drop-shadow(0px 4px 12px rgba(0,0,0,0.4))');
+      d3.select(this).select('.node-inner').attr('r', 10);
     })
     .on('click', (event, d) => {
       event.stopPropagation();
@@ -139,13 +141,16 @@ export function TherapyTree({ data }: { data: TreeData }) {
 
     // --- LABELS (Clean & Legible) ---
     node.append('text')
-      .attr('dy', 46)
+      .attr('dy', 48)
       .attr('text-anchor', 'middle')
-      .attr('font-family', 'Inter, sans-serif')
-      .attr('font-size', '13px')
+      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-size', '14px')
       .attr('font-weight', '600')
-      .attr('fill', '#ffffff')
-      .style('text-shadow', '0px 2px 4px rgba(0,0,0,0.8)')
+      .attr('fill', '#F4F4F5') // zinc-100
+      .attr('stroke', '#09090B') // zinc-950 halo
+      .attr('stroke-width', 5)
+      .attr('stroke-linejoin', 'round')
+      .attr('paint-order', 'stroke')
       .style('pointer-events', 'none')
       .text(d => d.label);
 
@@ -159,14 +164,14 @@ export function TherapyTree({ data }: { data: TreeData }) {
       link.attr('d', (d: any) => {
         const dx = d.target.x - d.source.x;
         const dy = d.target.y - d.source.y;
-        const dr = Math.sqrt(dx * dx + dy * dy) * 1.5; // Gentle curve
+        const dr = Math.sqrt(dx * dx + dy * dy) * 1.2; // Gentle curve
         return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
       });
 
       // Position link labels
       linkLabel
         .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
-        .attr('y', (d: any) => (d.source.y + d.target.y) / 2 - 8);
+        .attr('y', (d: any) => (d.source.y + d.target.y) / 2 - 6);
 
       // Position nodes
       node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
@@ -196,66 +201,61 @@ export function TherapyTree({ data }: { data: TreeData }) {
 
   if (!data || !data.nodes || data.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
-        <p className="text-zinc-500 text-sm">L'arbre thérapeutique se construira au fil des séances.</p>
+      <div className="flex items-center justify-center h-full min-h-[400px] bg-zinc-950 rounded-[24px]">
+        <p className="text-zinc-500 text-sm font-medium">L'arbre thérapeutique se construira au fil des séances.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#050505] rounded-2xl border border-zinc-800/60 overflow-hidden relative cursor-move shadow-inner">
+    <div className="bg-zinc-950 w-full h-full min-h-[500px] relative overflow-hidden cursor-move font-sans">
       {/* Soft radial gradient background for depth */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_100%)] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] pointer-events-none"></div>
 
-      {/* Clean Legend */}
-      <div className="absolute top-4 left-4 flex flex-col gap-3 bg-zinc-900/60 backdrop-blur-xl p-4 rounded-xl border border-zinc-800/50 shadow-lg z-10">
-        <div className="text-xs text-zinc-400 font-medium tracking-wide flex items-center gap-2 mb-1">
-          <Brain className="w-4 h-4" />
-          Légende
+      {/* Explicit Legend Card */}
+      <div className="absolute top-6 left-6 flex flex-col gap-3 bg-zinc-900/90 backdrop-blur-xl p-5 rounded-2xl border border-zinc-800/60 shadow-[0_8px_30px_rgb(0,0,0,0.4)] z-10">
+        <div className="flex items-center gap-2 mb-1">
+          <Brain className="w-4 h-4 text-zinc-400" />
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Légende</h3>
         </div>
-        
-        <div className="flex items-center gap-3 text-sm text-zinc-300">
-          <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: '#e11d48', backgroundColor: '#050505' }}></div>
-          <span>Cause Racine</span>
-        </div>
-        
-        <div className="flex items-center gap-3 text-sm text-zinc-300">
-          <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: '#10b981', backgroundColor: '#050505' }}></div>
-          <span>Symptôme</span>
-        </div>
-        
-        <div className="flex items-center gap-3 text-sm text-zinc-300">
-          <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: '#3b82f6', backgroundColor: '#050505' }}></div>
-          <span>Émotion</span>
-        </div>
-
-        <div className="text-[11px] text-zinc-500 mt-2 pt-3 border-t border-zinc-800/50">
-          Molette pour zoomer • Glisser pour déplacer
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 text-sm font-medium text-zinc-200">
+            <div className="w-4 h-4 rounded-full bg-[#FF385C] shadow-sm border border-white/10"></div>
+            <span>Cause Racine</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm font-medium text-zinc-200">
+            <div className="w-4 h-4 rounded-full bg-[#FFB400] shadow-sm border border-white/10"></div>
+            <span>Symptôme</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm font-medium text-zinc-200">
+            <div className="w-4 h-4 rounded-full bg-[#00A699] shadow-sm border border-white/10"></div>
+            <span>Émotion</span>
+          </div>
         </div>
       </div>
 
-      <svg ref={svgRef} width="100%" height="400" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full min-h-[500px] z-0 relative" />
+      <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full z-0 relative" />
       
-      {/* Serene Tooltip */}
+      {/* Clean Airbnb-style Tooltip (High Contrast White Card) */}
       {selectedNode && (
         <div 
-          className="fixed z-50 bg-zinc-900/95 backdrop-blur-md border border-zinc-800 shadow-2xl p-5 rounded-2xl max-w-sm transform -translate-x-1/2 -translate-y-full mt-[-16px]"
+          className="fixed z-50 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.2)] p-5 rounded-2xl max-w-sm transform -translate-x-1/2 -translate-y-full mt-[-20px] transition-all duration-200 ease-out"
           style={{ left: tooltipPos.x, top: tooltipPos.y }}
         >
-          <div className="flex items-start gap-3 mb-3">
-            <div className="mt-1">
-              {selectedNode.type === 'root_cause' ? <Target className="w-5 h-5" style={{ color: '#e11d48' }} /> :
-               selectedNode.type === 'emotion' ? <Heart className="w-5 h-5" style={{ color: '#3b82f6' }} /> :
-               selectedNode.type === 'symptom' ? <Leaf className="w-5 h-5" style={{ color: '#10b981' }} /> : 
-               <Brain className="w-5 h-5 text-zinc-400" />}
+          <div className="flex items-start gap-4 pr-6">
+            <div className="mt-0.5 flex-shrink-0">
+              {selectedNode.type === 'root_cause' ? <Target className="w-6 h-6" style={{ color: '#FF385C' }} /> :
+               selectedNode.type === 'emotion' ? <Heart className="w-6 h-6" style={{ color: '#00A699' }} /> :
+               selectedNode.type === 'symptom' ? <Leaf className="w-6 h-6" style={{ color: '#FFB400' }} /> : 
+               <Brain className="w-6 h-6 text-zinc-400" />}
             </div>
             <div>
-              <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+              <div className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">
                 {selectedNode.type === 'root_cause' ? 'Cause Racine' :
                  selectedNode.type === 'emotion' ? 'Émotion' :
                  selectedNode.type === 'symptom' ? 'Symptôme' : selectedNode.type}
               </div>
-              <h4 className="font-medium text-zinc-100 text-base leading-snug">
+              <h4 className="font-semibold text-zinc-900 text-lg leading-tight">
                 {selectedNode.label}
               </h4>
             </div>
@@ -263,9 +263,9 @@ export function TherapyTree({ data }: { data: TreeData }) {
           
           <button 
             onClick={() => setSelectedNode(null)}
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 transition-colors"
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors"
           >
-            ×
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}

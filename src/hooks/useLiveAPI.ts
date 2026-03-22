@@ -38,6 +38,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return window.btoa(binary);
 }
+
 export async function previewVoice(voiceName: string): Promise<void> {
   try {
     let apiKey = process.env.GEMINI_API_KEY;
@@ -101,6 +102,7 @@ export async function previewVoice(voiceName: string): Promise<void> {
     throw error;
   }
 }
+
 export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr') {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
@@ -129,6 +131,8 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
+
+      // Add a small buffer (0.05s) to prevent immediate underrun if starting fresh
       const startTime = Math.max(ctx.currentTime + 0.05, nextPlayTimeRef.current);
       source.start(startTime);
       nextPlayTimeRef.current = startTime + buffer.duration;
@@ -151,7 +155,6 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     }
   }, []);
 
-
   const stopPlayback = useCallback(() => {
     playbackQueueRef.current = [];
     activeSourceNodesRef.current.forEach((source) => {
@@ -168,7 +171,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     setIsSpeaking(false);
   }, []);
 
-  const disconnect = useCallback(async () => {
+  const connect = useCallback(async () => {
     try {
       setError(null);
       
@@ -209,7 +212,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         }
       }
 
-      let apiKey = import.meta.env.VITE_GEMINI_API_KEY ?? '';
+      let apiKey = process.env.GEMINI_API_KEY;
       try {
         const configRes = await fetch('/api/config');
         if (configRes.ok) {
@@ -230,7 +233,6 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
 
       // Initialize Audio Context (16kHz for recording)
       const ctx = new AudioContext({ sampleRate: 16000 });
-      await ctx.resume();
       audioContextRef.current = ctx;
 
       // Request Microphone Access
@@ -238,9 +240,9 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         audio: {
           channelCount: 1,
           sampleRate: 16000,
-          echoCancellation: true,   
-          noiseSuppression: true,   
-          autoGainControl: true, 
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         },
       });
       streamRef.current = stream;
@@ -320,18 +322,6 @@ G. Début de séance
 Dès ta TOUTE PREMIÈRE intervention de la séance, tu DOIS te présenter brièvement en disant quelque chose dans ce style : "Bonjour, je suis ton assistante émotionnelle et psychologique, Marie. Parle-moi de tes doutes, de tes problèmes ou de tes questionnements. Je suis là pour t'aider et t'écouter."
 (Adapte légèrement pour que ce soit naturel, mais garde toujours cette identité et cette invitation).
 
-K. RECOMMANDATION DE SPÉCIALISTES
-Si, au cours de ton analyse, tu perçois qu'un accompagnement humain spécifique serait particulièrement bénéfique ou plus efficace pour l'utilisateur, n'hésite pas à lui suggérer de consulter un professionnel adapté à sa situation. Explique-lui brièvement pourquoi cette spécialité serait pertinente pour lui.
-Voici les spécialités que tu peux recommander :
-- Psychologue clinicien (troubles mentaux, émotionnels, TCC, EMDR, Psychanalyse)
-- Neuropsychologue (troubles cognitifs, TDAH, lésions cérébrales, apprentissage)
-- Psychologue du travail (burn-out, souffrance au travail, orientation)
-- Psychologue du développement / scolaire (problèmes liés à l'enfance, l'adolescence, la parentalité)
-- Psychologue de la santé (maladies chroniques, addictions, gestion de la douleur)
-- Psychologue du sport (performance, gestion du stress compétitif)
-- Psychologue systémicien / familial (thérapie de couple, conflits familiaux)
-- Psychocriminologue (victimes, justice)
-
 H. Cadre théorique et Thérapie de couple
 Pour les problématiques relationnelles et de couple, tu t'appuies explicitement sur les concepts suivants :
 - Méthode Gottman : identification des "Quatre Cavaliers" (critique, mépris, attitude défensive, fuite/stonewalling), gestion des conflits insolubles et restauration de l'amitié/intimité.
@@ -355,7 +345,19 @@ Si l'utilisateur exprime des idées suicidaires, des envies de meurtre, des inte
 5. Dirige IMPÉRATIVEMENT et CLAIREMENT vers des secours humains professionnels. Donne les numéros d'urgence : le 112 (Urgences Europe), le 15 (SAMU en France), le 3114 (Numéro national de prévention du suicide en France), ou le 911 (Amérique du Nord). Conseille d'aller aux urgences de l'hôpital le plus proche.
 6. Reste avec l'utilisateur, encourage-le à parler à un proche ou à appeler les secours pendant que vous discutez. Ne le juge jamais, ne fais pas la morale. Ton seul but est de le maintenir en sécurité et de l'orienter vers une aide humaine immédiate.
 
-K. RÈGLE ABSOLUE (CRITIQUE POUR LE TEMPS DE RÉPONSE) :
+K. RECOMMANDATION DE SPÉCIALISTES
+Si, au cours de ton analyse, tu perçois qu'un accompagnement humain spécifique serait particulièrement bénéfique ou plus efficace pour l'utilisateur, n'hésite pas à lui suggérer de consulter un professionnel adapté à sa situation. Explique-lui brièvement pourquoi cette spécialité serait pertinente pour lui.
+Voici les spécialités que tu peux recommander :
+- Psychologue clinicien (troubles mentaux, émotionnels, TCC, EMDR, Psychanalyse)
+- Neuropsychologue (troubles cognitifs, TDAH, lésions cérébrales, apprentissage)
+- Psychologue du travail (burn-out, souffrance au travail, orientation)
+- Psychologue du développement / scolaire (problèmes liés à l'enfance, l'adolescence, la parentalité)
+- Psychologue de la santé (maladies chroniques, addictions, gestion de la douleur)
+- Psychologue du sport (performance, gestion du stress compétitif)
+- Psychologue systémicien / familial (thérapie de couple, conflits familiaux)
+- Psychocriminologue (victimes, justice)
+
+L. RÈGLE ABSOLUE (CRITIQUE POUR LE TEMPS DE RÉPONSE) :
 NE FAIS AUCUN COMMENTAIRE INTERNE. NE DÉCRIS PAS CE QUE TU FAIS. COMMENCE DIRECTEMENT PAR PARLER AU PATIENT. N'écris JAMAIS de texte comme "**Initiating Exploration**" ou "I'm beginning the process". Tes mots doivent être UNIQUEMENT ce que tu dis à voix haute au patient. Aucun préambule, aucune réflexion écrite.
 
 ${isIncisiveMode ? `MODE INCISIF (ÉLECTROCHOC) ACTIVÉ : 
@@ -392,14 +394,14 @@ RÈGLES VOCALES STRICTES :
 - Parle d'une voix de femme fluide, profonde, posée et très naturelle.
 - Reste très bref pour une réactivité maximale.
 - NE RÉSUME PAS et NE RÉPÈTE PAS ce que l'utilisateur vient de dire. Réponds directement.
-- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.
-`;
+- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.`;
+
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } }, // 'Kore' is a female voice
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } },
           },
           systemInstruction: systemInstruction,
           outputAudioTranscription: {},
@@ -415,7 +417,7 @@ RÈGLES VOCALES STRICTES :
             });
 
             // Trigger the AI to speak immediately
-            sessionPromise.then((session: any) => {
+            sessionPromise.then((session) => {
               session.sendClientContent({ turns: "La séance commence. Bonjour, je t'écoute.", turnComplete: true });
             }).catch(() => {});
 
@@ -447,9 +449,9 @@ RÈGLES VOCALES STRICTES :
               buffer.getChannelData(0).set(float32Array);
 
               playbackQueueRef.current.push(buffer);
-              playNextInQueue(); 
-              }
-            
+              playNextInQueue();
+            }
+
             // Handle interruption
             if (message.serverContent?.interrupted) {
               stopPlayback();
@@ -536,13 +538,16 @@ RÈGLES VOCALES STRICTES :
       sessionRef.current = sessionPromise;
     } catch (err: any) {
       console.error('Failed to connect:', err);
-      setError(err.message || 'Failed to connect to microphone or API.');
+      if (err.name === 'NotAllowedError' || err.message === 'Permission denied') {
+        setError("L'accès au microphone a été refusé. Veuillez autoriser le microphone dans les paramètres de votre navigateur (l'icône de cadenas dans la barre d'adresse) pour utiliser la séance vocale.");
+      } else {
+        setError(err.message || 'Échec de la connexion au microphone ou à l\'API.');
+      }
       setIsConnected(false);
     }
-  }, [playNextInQueue, stopPlayback, disconnect, user, history, isIncisiveMode]);
+  }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode]);
 
-
-  const connect = useCallback(async () => {
+  const disconnect = useCallback(async () => {
     if (sessionRef.current) {
       sessionRef.current.then((session: any) => session.close());
       sessionRef.current = null;
@@ -572,7 +577,7 @@ RÈGLES VOCALES STRICTES :
       try {
         const transcript = messagesRef.current.map(m => `${m.role}: ${m.text}`).join('\n');
         
-        let apiKey = import.meta.env.VITE_GEMINI_API_KEY ?? '';
+        let apiKey = process.env.GEMINI_API_KEY;
         try {
           const configRes = await fetch('/api/config');
           if (configRes.ok) {
@@ -658,7 +663,7 @@ Transcription:\n${transcript}`,
         }
         const result = JSON.parse(responseText);
 
-       await addDoc(collection(db, 'patient_history'), {
+        await addDoc(collection(db, 'patient_history'), {
           userId: user.uid,
           date: new Date().toISOString(),
           summary: result.summary || 'Résumé non disponible.',
@@ -666,7 +671,7 @@ Transcription:\n${transcript}`,
           tree_data: JSON.stringify(result.tree_data || currentTree),
           clinical_data: JSON.stringify(result.clinical_data || {}),
           therapeutic_plan: JSON.stringify(result.therapeutic_plan || {}),
-          anonymized_anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
+          anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
         });
 
       } catch (e: any) {

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp , Volume2, Play} from 'lucide-react';
-import { useLiveAPI , previewVoice} from './hooks/useLiveAPI';
-
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play } from 'lucide-react';
+import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
-import { jspdf } from 'jspdf';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
+import { jsPDF } from 'jspdf';
 
 interface SessionHistory {
   id: string;
@@ -19,18 +18,20 @@ interface SessionHistory {
 }
 
 export default function App() {
-  // --- 1. DÉCLARATION DE TOUS LES ÉTATS (STATES) ---
   const [user, setUser] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isIncisiveMode, setIsIncisiveMode] = useState(false);
+
   const [history, setHistory] = useState<SessionHistory[]>([]);
+  const [voiceName, setVoiceName] = useState<string>(() => {
+    return localStorage.getItem('psychoia_voice') || 'Zephyr';
+  });
+  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName);
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentTOS, setConsentTOS] = useState(false);
@@ -38,19 +39,11 @@ export default function App() {
   const [expandedTOS, setExpandedTOS] = useState(false);
   const [expandedHealth, setExpandedHealth] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
-  const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('psychoia_voice') || 'Zephyr');
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
-  // --- 2. APPEL DU HOOK (APRES LES STATES) ---
-  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(
-    user, 
-    history, 
-    isIncisiveMode, 
-    voiceName
-  );
-
-  // --- 3. LES EFFETS (EFFECTS) ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -61,7 +54,6 @@ export default function App() {
 
   useEffect(() => {
     const checkConsent = async () => {
-      // (La suite de ton code checkConsent continue ici...)
       if (user) {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -77,7 +69,7 @@ export default function App() {
       checkConsent();
     }
   }, [user, isAuthReady]);
-  
+
   useEffect(() => {
     if (isAuthReady && user) {
       const q = query(
@@ -118,7 +110,8 @@ export default function App() {
       console.error(err);
     }
   };
-const handleConsentSubmit = async () => {
+
+  const handleConsentSubmit = async () => {
     if (user && consentTOS && consentHealthData) {
       try {
         await setDoc(doc(db, 'users', user.uid), {
@@ -136,12 +129,16 @@ const handleConsentSubmit = async () => {
     if (!user) return;
     setIsDeletingAccount(true);
     try {
+      // Delete all patient history
       const q = query(collection(db, 'patient_history'), where('userId', '==', user.uid));
       const snapshot = await getDocs(q);
       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
 
+      // Delete user doc
       await deleteDoc(doc(db, 'users', user.uid));
+
+      // Delete auth user
       await deleteUser(user);
       
       setHistory([]);
@@ -166,6 +163,7 @@ const handleConsentSubmit = async () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
   const handlePreviewVoice = async () => {
     if (isPreviewing) return;
     setIsPreviewing(true);
@@ -178,7 +176,7 @@ const handleConsentSubmit = async () => {
       setIsPreviewing(false);
     }
   };
-  
+
   const handleDeleteSession = async (sessionId: string) => {
     setSessionToDelete(sessionId);
   };
@@ -440,7 +438,7 @@ const handleConsentSubmit = async () => {
                   <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
               </div>
-        </div>
+            </div>
 
             <div className="flex-1">
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Vos données</h3>
@@ -541,7 +539,7 @@ const handleConsentSubmit = async () => {
               </div>
             </div>
           </div>
-                )}
+        )}
       </div>
 
       {/* Main Content */}
@@ -994,41 +992,37 @@ const handleConsentSubmit = async () => {
 
       {/* Tree Modal */}
       {showTree && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-[95vw] h-[95vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
-                <Network className="w-5 h-5 mr-3 text-indigo-500" />
-                Arbre Thérapeutique
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/60 backdrop-blur-md">
+          <div className="bg-zinc-900 rounded-[24px] w-full max-w-5xl h-[85vh] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-zinc-800/50 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50 relative">
               <button 
                 onClick={() => setShowTree(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors absolute left-4"
               >
                 <X className="w-5 h-5" />
               </button>
+              <h2 className="text-lg font-semibold text-zinc-100 w-full text-center">
+                Arbre Thérapeutique
+              </h2>
+              <div className="w-9" /> {/* Spacer for centering */}
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 flex flex-col space-y-8">
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col bg-zinc-950/30">
               {history.length === 0 ? (
-                <p className="text-zinc-500 text-center py-8">Aucun arbre disponible pour le moment.</p>
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-zinc-500 text-center">Aucun arbre disponible pour le moment.</p>
+                </div>
               ) : (
-                <>
-                  {/* Global Therapy Tree */}
+                <div className="flex-1 flex flex-col min-h-0 bg-zinc-900 rounded-2xl border border-zinc-800/50 overflow-hidden shadow-sm">
                   {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
-                    <div className="flex-1 flex flex-col min-h-0">
-                      <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4 flex items-center shrink-0">
-                        <Network className="w-4 h-4 mr-2 text-emerald-500" />
-                        Cartographie des Problèmes
-                      </h3>
-                      <div className="flex-1 min-h-0">
-                        <TherapyTree data={latestTreeData} />
-                      </div>
-                    </div>
+                    <TherapyTree data={latestTreeData} />
                   ) : (
-                    <p className="text-zinc-500 text-center py-8">L'arbre thérapeutique est en cours de construction.</p>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-zinc-500 text-center">L'arbre thérapeutique est en cours de construction.</p>
+                    </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -1126,7 +1120,8 @@ const handleConsentSubmit = async () => {
           </div>
         </div>
       )}
-        {/* Settings Modal */}
+
+      {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
@@ -1144,26 +1139,44 @@ const handleConsentSubmit = async () => {
             </div>
             
             <div className="p-6 space-y-6">
-                        <div className="space-y-4">
-                                      <p className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Préférences</p>
-                                      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-                                                      <div className="flex items-center gap-3">
-                                                                        <Volume2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                                                                        <div className="text-left">
-                                                                                            <p className="text-sm font-medium text-zinc-200">Voix de l'assistant</p>
-                                                                                            <p className="text-xs text-zinc-500">Choisissez la voix qui vous convient.</p>
-                                                                                          </div>
-                                                                      </div>
-                                                      <select value={voiceName} onChange={(e) => { setVoiceName(e.target.value); localStorage.setItem('psychoia_voice', e.target.value); }} className="w-full sm:w-auto bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg p-2">
-                                                                        <option value="Zephyr">Zephyr </option>
-                                                                        <option value="Kore">Kore </option>
-                                                                        <option value="Puck">Puck </option>
-                                                                        <option value="Charon">Charon </option>
-                                                                        <option value="Fenrir">Fenrir </option>
-                                                                      </select>
-                                                      <button onClick={handlePreviewVoice} disabled={isPreviewing} className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Écouter un aperçu">{isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}</button>
-                                                    </div>
-                                    </div>
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Préférences</h3>
+                
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+                  <div className="flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-zinc-200">Voix de l'assistant</p>
+                      <p className="text-xs text-zinc-500">Choisissez la voix qui vous convient le mieux.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select 
+                      value={voiceName}
+                      onChange={(e) => {
+                        setVoiceName(e.target.value);
+                        localStorage.setItem('psychoia_voice', e.target.value);
+                      }}
+                      className="flex-1 sm:flex-none bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2"
+                    >
+                      <option value="Zephyr">Zephyr</option>
+                      <option value="Kore">Kore</option>
+                      <option value="Puck">Puck</option>
+                      <option value="Charon">Charon</option>
+                      <option value="Fenrir">Fenrir</option>
+                    </select>
+                    <button
+                      onClick={handlePreviewVoice}
+                      disabled={isPreviewing}
+                      className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Écouter un aperçu"
+                    >
+                      {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
                 

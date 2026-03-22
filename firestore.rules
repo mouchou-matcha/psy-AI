@@ -15,7 +15,6 @@ service cloud.firestore {
     //   - tree_data: string (required) - JSON stringified tree data
     //   - clinical_data: string (required) - JSON stringified clinical data
     //   - therapeutic_plan: string (required) - JSON stringified plan
-    //   - transcript: string (optional) - Raw session transcript
     //   - anonymized_transcript: string (optional) - GDPR compliant transcript
     //
     // ===============================================================
@@ -58,7 +57,7 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(fields);
     }
 
-   function isValidPatientHistory(data) {
+    function isValidPatientHistory(data) {
       return hasOnlyAllowedFields(['userId', 'date', 'summary', 'insights', 'tree_data', 'clinical_data', 'therapeutic_plan', 'anonymized_transcript']) &&
              data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
              isValidDateString(data.date) &&
@@ -69,7 +68,8 @@ service cloud.firestore {
              data.therapeutic_plan is string && data.therapeutic_plan.size() < 50000 &&
              (!('anonymized_transcript' in data) || (data.anonymized_transcript is string && data.anonymized_transcript.size() < 500000));
     }
-function isValidUser(data) {
+
+    function isValidUser(data) {
       return hasOnlyAllowedFields(['hasConsented', 'consentedAt']) &&
              data.hasConsented is bool &&
              data.consentedAt is string &&
@@ -82,6 +82,7 @@ function isValidUser(data) {
       allow update: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
       allow delete: if isAuthenticated() && request.auth.uid == userId;
     }
+
     match /patient_history/{historyId} {
       allow read: if isAuthenticated() && isDocOwner();
       allow create: if isAuthenticated() && isValidPatientHistory(request.resource.data) && request.resource.data.userId == request.auth.uid;
