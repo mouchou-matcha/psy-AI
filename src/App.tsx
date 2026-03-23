@@ -33,6 +33,7 @@ export default function App() {
   const [showTree, setShowTree] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentTOS, setConsentTOS] = useState(false);
   const [consentHealthData, setConsentHealthData] = useState(false);
@@ -1181,6 +1182,22 @@ export default function App() {
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
                 
                 <button 
+                  onClick={() => {
+                    setShowSettings(false);
+                    setShowPrivacyPolicy(true);
+                  }}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors border border-zinc-700/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-zinc-200 group-hover:text-zinc-100">Politique de confidentialité</p>
+                      <p className="text-xs text-zinc-500">Consulter les règles de traitement de vos données.</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
                   onClick={handleDownloadData}
                   className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors border border-zinc-700/50 group"
                 >
@@ -1223,13 +1240,13 @@ export default function App() {
             <div className="p-6 border-b border-zinc-800">
               <h2 className="text-2xl font-medium text-zinc-100 flex items-center">
                 <ShieldCheck className="w-6 h-6 mr-3 text-emerald-500" />
-                Consentement & Confidentialité
+                Création de compte & Consentement
               </h2>
             </div>
             
             <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
               <p className="text-sm text-zinc-300 leading-relaxed">
-                Pour utiliser PsychoIA, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Nous prenons votre vie privée très au sérieux.
+                Bienvenue sur PsychoIA. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
               </p>
 
               <div className="space-y-4">
@@ -1280,7 +1297,7 @@ export default function App() {
                         <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
                           <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant PsychoIA.</p>
                           <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
-                          <p><strong>3. Sous-traitants :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage tiers (ex: Google). Vos données sont transmises de manière sécurisée et chiffrée pour générer les réponses, mais ne sont pas utilisées pour entraîner publiquement ces modèles.</p>
+                          <p><strong>3. Sous-traitants & IA Privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>strictement pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
                           <p><strong>4. Vos Droits :</strong> Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application intègre des fonctionnalités vous permettant d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique en un clic depuis les paramètres.</p>
                           <p><strong>5. Durée de conservation :</strong> Vos données sont conservées uniquement tant que votre compte est actif. La suppression de votre compte entraîne l'effacement immédiat et irréversible de vos données de nos serveurs.</p>
                         </div>
@@ -1304,8 +1321,92 @@ export default function App() {
                 className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                J'accepte
+                Créer mon compte
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyPolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+                <ShieldCheck className="w-5 h-5 mr-3 text-emerald-500" />
+                Politique de Confidentialité
+              </h2>
+              <button 
+                onClick={() => setShowPrivacyPolicy(false)}
+                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] text-sm text-zinc-300">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-zinc-100">1. Introduction</h3>
+                <p>
+                  La présente politique de confidentialité explique comment PsychoIA collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-100">2. Données collectées</h3>
+                <p>
+                  <strong>Données de compte :</strong> Lors de votre connexion via Google, nous collectons votre adresse email, votre nom d'utilisateur et votre photo de profil fournis par Google.
+                </p>
+                <p>
+                  <strong>Données de santé (Sensibles) :</strong> Les conversations vocales et textuelles que vous avez avec l'IA peuvent contenir des données de santé mentale. Ces données sont traitées en temps réel.
+                </p>
+                <p>
+                  <strong>Données générées :</strong> L'IA génère des résumés, des analyses cliniques et des plans thérapeutiques basés sur vos conversations.
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-100">3. Utilisation des données et IA Privée</h3>
+                <p>
+                  Vos données sont utilisées <strong>exclusivement</strong> pour vous fournir le service d'accompagnement psychologique.
+                </p>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 text-emerald-400">
+                  <strong>Garantie de non-entraînement :</strong> Nous utilisons une infrastructure payante (Google Cloud API). Vos données vocales et textuelles <strong>ne sont pas utilisées</strong> par Google ou par nous-mêmes pour entraîner, améliorer ou perfectionner des modèles d'intelligence artificielle.
+                </div>
+
+                <h3 className="text-lg font-medium text-zinc-100">4. Stockage et Sécurité</h3>
+                <p>
+                  Vos résumés et analyses sont stockés de manière sécurisée sur les serveurs de Firebase (Google Cloud). Les flux audio en temps réel ne sont <strong>pas stockés</strong> après leur traitement immédiat.
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-100">5. Vos droits (RGPD)</h3>
+                <p>
+                  Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants :
+                </p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Droit d'accès et de portabilité :</strong> Vous pouvez télécharger l'intégralité de vos données au format JSON depuis les paramètres.</li>
+                  <li><strong>Droit à l'effacement (Droit à l'oubli) :</strong> Vous pouvez supprimer définitivement votre compte et toutes vos données associées en un clic depuis les paramètres.</li>
+                  <li><strong>Droit de rectification :</strong> Vous pouvez modifier les informations de votre profil via votre compte Google.</li>
+                </ul>
+
+                <h3 className="text-lg font-medium text-zinc-100">6. Cookies et Traceurs</h3>
+                <p>
+                  PsychoIA n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-100">7. Mentions Légales</h3>
+                <p>
+                  <strong>Éditeur du service :</strong> PsychoIA<br />
+                  <strong>Hébergeur :</strong> Google LLC (Firebase & Google Cloud), 1600 Amphitheatre Parkway, Mountain View, CA 94043, États-Unis.
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-100">8. Contact et Exercice de vos droits</h3>
+                <p>
+                  Pour toute question relative à la protection de vos données personnelles, ou pour exercer vos droits (accès, rectification, suppression), vous pouvez nous contacter directement à l'adresse suivante :
+                </p>
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3 inline-block">
+                  <a href="mailto:julyand36@gmail.com" className="text-emerald-400 hover:text-emerald-300 font-medium">
+                    julyand36@gmail.com
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
