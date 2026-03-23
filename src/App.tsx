@@ -1394,7 +1394,7 @@ export default function App() {
                 <h3 className="text-lg font-medium text-zinc-100">7. Mentions Légales</h3>
                 <p>
                   <strong>Éditeur du service :</strong> PsychoIA<br />
-                  <strong>Hébergeur :</strong> Google LLC (Firebase & Google Cloud), 1600 Amphitheatre Parkway, Mountain View, CA 94043, États-Unis.
+                  <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (Serveurs de données situés à Londres, Royaume-Uni - région <em>europe-west2</em>, en stricte conformité avec le RGPD).
                 </p>
 
                 <h3 className="text-lg font-medium text-zinc-100">8. Contact et Exercice de vos droits</h3>
