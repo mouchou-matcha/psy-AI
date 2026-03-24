@@ -44,6 +44,8 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [wasConnected, setWasConnected] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -92,6 +94,16 @@ export default function App() {
       setHistory([]);
     }
   }, [isAuthReady, user, isSaving]);
+
+  useEffect(() => {
+    if (isConnected) {
+      setWasConnected(true);
+    } else if (wasConnected && !isConnected && !isSaving) {
+      // Session just ended and finished saving
+      setShowDonationModal(true);
+      setWasConnected(false);
+    }
+  }, [isConnected, isSaving, wasConnected]);
 
   const handleGoogleLogin = async () => {
     setAuthError('');
@@ -1406,6 +1418,45 @@ export default function App() {
                     julyand36@gmail.com
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Donation Modal */}
+      {showDonationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
+                <Heart className="w-8 h-8 text-emerald-500" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-medium text-zinc-100">Soutenir PsychoIA</h2>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  PsychoIA est développé de manière indépendante. Si cette séance vous a été utile, vous pouvez soutenir le projet avec une participation libre. Cela nous aide à payer les serveurs sécurisés et à améliorer l'IA.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-4">
+                <a 
+                  href="https://donate.stripe.com/00w6ozcqo7cT1F8aqz9IQ00" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={() => setShowDonationModal(false)}
+                  className="w-full py-3 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Heart className="w-4 h-4" />
+                  Faire un don (Montant libre)
+                </a>
+                <button 
+                  onClick={() => setShowDonationModal(false)}
+                  className="w-full py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                >
+                  Non merci, peut-être plus tard
+                </button>
               </div>
             </div>
           </div>
