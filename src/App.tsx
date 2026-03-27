@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play } from 'lucide-react';
 import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
@@ -25,7 +25,7 @@ export default function App() {
 
   const [history, setHistory] = useState<SessionHistory[]>([]);
   const [voiceName, setVoiceName] = useState<string>(() => {
-    return localStorage.getItem('psychoia_voice') || 'Zephyr';
+    return localStorage.getItem('marie_voice') || 'Zephyr';
   });
   const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName);
   const [hasStarted, setHasStarted] = useState(false);
@@ -44,8 +44,9 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
-  const [showDonationModal, setShowDonationModal] = useState(false);
-  const [wasConnected, setWasConnected] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isCreditsPanelOpen, setIsCreditsPanelOpen] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -56,21 +57,37 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const checkConsent = async () => {
+    let unsubscribeUser: () => void;
+    
+    const checkConsentAndData = async () => {
       if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (!userDoc.exists() || !userDoc.data().hasConsented) {
+        unsubscribeUser = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserData(data);
+            if (!data.hasConsented) {
+              setShowConsentModal(true);
+            }
+            // Initialize availableTime if it doesn't exist (10 minutes = 600 seconds)
+            if (data.availableTime === undefined) {
+              setDoc(doc(db, 'users', user.uid), { availableTime: 600 }, { merge: true });
+            }
+          } else {
             setShowConsentModal(true);
           }
-        } catch (err) {
-          console.error("Error checking consent:", err);
-        }
+        }, (err) => {
+          console.error("Error fetching user data:", err);
+        });
       }
     };
+    
     if (isAuthReady) {
-      checkConsent();
+      checkConsentAndData();
     }
+    
+    return () => {
+      if (unsubscribeUser) unsubscribeUser();
+    };
   }, [user, isAuthReady]);
 
   useEffect(() => {
@@ -94,16 +111,6 @@ export default function App() {
       setHistory([]);
     }
   }, [isAuthReady, user, isSaving]);
-
-  useEffect(() => {
-    if (isConnected) {
-      setWasConnected(true);
-    } else if (wasConnected && !isConnected && !isSaving) {
-      // Session just ended and finished saving
-      setShowDonationModal(true);
-      setWasConnected(false);
-    }
-  }, [isConnected, isSaving, wasConnected]);
 
   const handleGoogleLogin = async () => {
     setAuthError('');
@@ -129,7 +136,8 @@ export default function App() {
       try {
         await setDoc(doc(db, 'users', user.uid), {
           hasConsented: true,
-          consentedAt: new Date().toISOString()
+          consentedAt: new Date().toISOString(),
+          availableTime: 600
         }, { merge: true });
         setShowConsentModal(false);
       } catch (err) {
@@ -170,7 +178,7 @@ export default function App() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `psychoia_data_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `marie_data_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -319,7 +327,7 @@ export default function App() {
     doc.setTextColor(148, 163, 184); // slate-400
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.text(`Page ${i} sur ${pageCount} - Généré de manière sécurisée par PsychoIA`, pageWidth / 2, pageHeight - 10, { align: "center" });
+      doc.text(`Page ${i} sur ${pageCount} - Généré de manière sécurisée par Marie`, pageWidth / 2, pageHeight - 10, { align: "center" });
     }
 
     doc.save(`Dossier_Clinique_${sessionDate.split('T')[0]}.pdf`);
@@ -334,30 +342,53 @@ export default function App() {
     }
   }, [isConnected, isSaving]);
 
-  // 1-hour timer
+  // Timer based on available time
+  const availableTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (userData?.availableTime !== undefined) {
+      availableTimeRef.current = userData.availableTime;
+      if (!isConnected) {
+        setTimeLeft(userData.availableTime);
+      }
+    }
+  }, [userData?.availableTime, isConnected]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isConnected) {
-      setTimeLeft(3600); // 60 minutes
       interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev !== null && prev <= 1) {
+        if (availableTimeRef.current !== null) {
+          availableTimeRef.current -= 1;
+          const current = availableTimeRef.current;
+          
+          setTimeLeft(current);
+
+          if (current <= 0) {
             disconnect();
-            return null;
+            setShowPaywall(true);
           }
-          return prev !== null ? prev - 1 : null;
-        });
+
+          // Sync to DB every 5 seconds
+          if (current > 0 && current % 5 === 0 && user) {
+            setDoc(doc(db, 'users', user.uid), { availableTime: current }, { merge: true });
+          }
+        }
       }, 1000);
     } else {
-      setTimeLeft(null);
+      // Final sync on disconnect
+      if (user && availableTimeRef.current !== null) {
+        setDoc(doc(db, 'users', user.uid), { availableTime: availableTimeRef.current }, { merge: true });
+      }
     }
     return () => clearInterval(interval);
-  }, [isConnected, disconnect]);
+  }, [isConnected, disconnect, user]);
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    const validSeconds = Math.max(0, seconds);
+    const m = Math.floor(validSeconds / 60).toString().padStart(2, '0');
+    const s = (validSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s} min`;
   };
 
   // Handle start/stop
@@ -365,6 +396,10 @@ export default function App() {
     if (isConnected) {
       await disconnect();
     } else {
+      if (userData?.availableTime !== undefined && userData.availableTime <= 0) {
+        setShowPaywall(true);
+        return;
+      }
       setHasStarted(true);
       await connect();
     }
@@ -422,7 +457,7 @@ export default function App() {
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
             <Brain className="w-5 h-5 text-emerald-500" />
           </div>
-          <h1 className="text-xl font-medium tracking-tight">PsychoIA</h1>
+          <h1 className="text-xl font-medium tracking-tight">Marie</h1>
         </div>
 
         {user ? (
@@ -436,6 +471,20 @@ export default function App() {
                   <p className="text-sm font-medium text-zinc-200">{user.displayName || user.email}</p>
                   <p className="text-xs text-zinc-500">Patient connecté</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <button 
+                  onClick={() => setIsCreditsPanelOpen(true)}
+                  className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors group"
+                >
+                  <div className="flex items-center gap-2 text-emerald-400">
+                    <Zap className="w-4 h-4" /> 
+                    <span className="text-xs font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md group-hover:bg-emerald-500 group-hover:text-zinc-950 transition-colors">
+                    Recharger
+                  </span>
+                </button>
               </div>
               <div className="flex items-center gap-2">
                 <button 
@@ -564,19 +613,24 @@ export default function App() {
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
               <Brain className="w-4 h-4 text-emerald-500" />
             </div>
-            <span className="font-medium tracking-tight text-zinc-100">PsychoIA</span>
+            <span className="font-medium tracking-tight text-zinc-100">Marie</span>
           </div>
           
           {user ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-4 h-4 text-zinc-400" />}
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsCreditsPanelOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors text-xs font-medium text-emerald-400 group"
+              >
+                <Zap className="w-3 h-3" /> 
+                <span>{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                <span className="text-[10px] font-bold uppercase bg-emerald-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-emerald-500 group-hover:text-zinc-950 transition-colors">
+                  +
+                </span>
+              </button>
               <button 
                 onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300 mr-2"
+                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300"
                 title="Paramètres et Confidentialité"
               >
                 <Settings className="w-4 h-4" />
@@ -607,7 +661,7 @@ export default function App() {
               <Brain className="w-10 h-10 text-emerald-400" />
             </div>
             <h1 className="text-xl font-medium tracking-tight text-zinc-100">
-              Psychologue IA
+              Marie
             </h1>
             <p className="text-zinc-400 text-sm max-w-xs mx-auto leading-relaxed">
               Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.
@@ -724,7 +778,9 @@ export default function App() {
           className={`group relative flex items-center justify-center w-full py-4 px-8 rounded-2xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             isConnected
               ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 ring-1 ring-zinc-800'
-              : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20'
+              : (userData?.availableTime !== undefined && userData.availableTime <= 0)
+                ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-lg shadow-amber-500/20'
+                : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20'
           }`}
         >
           {isConnected ? (
@@ -733,8 +789,17 @@ export default function App() {
             </>
           ) : (
             <>
-              <Mic className="w-5 h-5 mr-2" />
-              <span>{isSaving ? 'Sauvegarde en cours...' : 'Commencer la session'}</span>
+              {(userData?.availableTime !== undefined && userData.availableTime <= 0) ? (
+                <>
+                  <Zap className="w-5 h-5 mr-2" />
+                  <span>Recharger pour continuer</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="w-5 h-5 mr-2" />
+                  <span>{isSaving ? 'Sauvegarde en cours...' : 'Commencer la session'}</span>
+                </>
+              )}
             </>
           )}
         </button>
@@ -1168,7 +1233,7 @@ export default function App() {
                       value={voiceName}
                       onChange={(e) => {
                         setVoiceName(e.target.value);
-                        localStorage.setItem('psychoia_voice', e.target.value);
+                        localStorage.setItem('marie_voice', e.target.value);
                       }}
                       className="flex-1 sm:flex-none bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2"
                     >
@@ -1258,7 +1323,7 @@ export default function App() {
             
             <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
               <p className="text-sm text-zinc-300 leading-relaxed">
-                Bienvenue sur PsychoIA. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
+                Bienvenue sur Marie. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
               </p>
 
               <div className="space-y-4">
@@ -1279,10 +1344,10 @@ export default function App() {
                       </div>
                       {expandedTOS && (
                         <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
-                          <p><strong>1. Nature du Service :</strong> PsychoIA est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
-                          <p><strong>2. Urgences :</strong> PsychoIA n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
+                          <p><strong>1. Nature du Service :</strong> Marie est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
+                          <p><strong>2. Urgences :</strong> Marie n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
                           <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte (hallucinations). Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
-                          <p><strong>4. Responsabilité :</strong> L'éditeur de PsychoIA décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques et périls.</p>
+                          <p><strong>4. Responsabilité :</strong> L'éditeur de Marie décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques et périls.</p>
                           <p><strong>5. Âge requis :</strong> L'utilisation de ce service est strictement réservée aux personnes majeures (18 ans et plus).</p>
                         </div>
                       )}
@@ -1307,7 +1372,7 @@ export default function App() {
                       </div>
                       {expandedHealth && (
                         <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
-                          <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant PsychoIA.</p>
+                          <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant Marie.</p>
                           <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
                           <p><strong>3. Sous-traitants & IA Privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>strictement pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
                           <p><strong>4. Vos Droits :</strong> Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application intègre des fonctionnalités vous permettant d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique en un clic depuis les paramètres.</p>
@@ -1361,7 +1426,7 @@ export default function App() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-zinc-100">1. Introduction</h3>
                 <p>
-                  La présente politique de confidentialité explique comment PsychoIA collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
+                  La présente politique de confidentialité explique comment Marie collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
                 </p>
 
                 <h3 className="text-lg font-medium text-zinc-100">2. Données collectées</h3>
@@ -1400,12 +1465,12 @@ export default function App() {
 
                 <h3 className="text-lg font-medium text-zinc-100">6. Cookies et Traceurs</h3>
                 <p>
-                  PsychoIA n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
+                  Marie n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
                 </p>
 
                 <h3 className="text-lg font-medium text-zinc-100">7. Mentions Légales</h3>
                 <p>
-                  <strong>Éditeur du service :</strong> PsychoIA<br />
+                  <strong>Éditeur du service :</strong> Marie<br />
                   <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (Serveurs de données situés à Londres, Royaume-Uni - région <em>europe-west2</em>, en stricte conformité avec le RGPD).
                 </p>
 
@@ -1424,40 +1489,158 @@ export default function App() {
         </div>
       )}
 
-      {/* Donation Modal */}
-      {showDonationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+      {/* Credits Panel Modal */}
+      {isCreditsPanelOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-emerald-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-8 text-center space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-medium text-zinc-100 flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-emerald-500" />
+                  Recharger vos crédits
+                </h2>
+                <button 
+                  onClick={() => setIsCreditsPanelOpen(false)}
+                  className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <p className="text-zinc-400 text-sm leading-relaxed text-left">
+                Marie fonctionne avec un système de crédits de temps. Vous ne payez que pour le temps de séance que vous consommez. Le temps non utilisé est conservé pour vos prochaines séances.
+              </p>
+
+              <div className="space-y-4">
+                {/* 20 Minutes Option */}
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <div className="text-zinc-100 font-medium">Forfait 20 minutes</div>
+                      <div className="text-zinc-500 text-sm">Séance standard</div>
+                    </div>
+                    <div className="text-xl font-semibold text-emerald-400">10 €</div>
+                  </div>
+                  <a 
+                    href="https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Acheter 20 minutes
+                  </a>
+                </div>
+
+                {/* 1 Hour Option */}
+                <div className="bg-zinc-800/50 border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                    Recommandé
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <div className="text-zinc-100 font-medium">Forfait 1 heure</div>
+                      <div className="text-zinc-500 text-sm">Thérapie approfondie</div>
+                    </div>
+                    <div className="text-xl font-semibold text-emerald-400">25 €</div>
+                  </div>
+                  <a 
+                    href="https://buy.stripe.com/cNiaEPbmkgNtabEaqz9IQ02" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Acheter 1 heure
+                  </a>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800/50">
+                <button 
+                  onClick={() => {
+                    // Dev simulation: Add 60 minutes (3600 seconds)
+                    if (user) {
+                      setDoc(doc(db, 'users', user.uid), { 
+                        availableTime: (userData?.availableTime || 0) + 3600 
+                      }, { merge: true });
+                    }
+                    setIsCreditsPanelOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 px-4 rounded-xl font-medium transition-colors text-sm"
+                >
+                  Simuler un paiement (Test +1h)
+                </button>
+                <p className="text-xs text-zinc-600 mt-3">
+                  Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paywall Modal */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
+          <div className="bg-zinc-900 border border-emerald-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
             <div className="p-8 text-center space-y-6">
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-                <Heart className="w-8 h-8 text-emerald-500" />
+                <Calendar className="w-8 h-8 text-emerald-500" />
               </div>
               
               <div className="space-y-2">
-                <h2 className="text-2xl font-medium text-zinc-100">Soutenir PsychoIA</h2>
+                <h2 className="text-2xl font-medium text-zinc-100">Temps écoulé</h2>
                 <p className="text-zinc-400 text-sm leading-relaxed">
-                  PsychoIA est développé de manière indépendante. Si cette séance vous a été utile, vous pouvez soutenir le projet avec une participation libre. Cela nous aide à payer les serveurs sécurisés et à améliorer l'IA.
+                  Votre crédit de temps gratuit (10 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
                 </p>
+              </div>
+
+              <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex items-center justify-between">
+                <div className="text-left">
+                  <div className="text-zinc-100 font-medium">Forfait 20 minutes</div>
+                  <div className="text-zinc-500 text-sm">Séance prolongée</div>
+                </div>
+                <div className="text-xl font-semibold text-emerald-400">10 €</div>
               </div>
 
               <div className="flex flex-col gap-3 pt-4">
                 <a 
-                  href="https://donate.stripe.com/00w6ozcqo7cT1F8aqz9IQ00" 
+                  href="https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  onClick={() => setShowDonationModal(false)}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition-colors flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
                 >
-                  <Heart className="w-4 h-4" />
-                  Faire un don (Montant libre)
+                  <Zap className="w-5 h-5" />
+                  Acheter 20 minutes
                 </a>
+                
                 <button 
-                  onClick={() => setShowDonationModal(false)}
-                  className="w-full py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  onClick={() => {
+                    // Dev simulation: Add 20 minutes (1200 seconds)
+                    if (user) {
+                      setDoc(doc(db, 'users', user.uid), { 
+                        availableTime: (userData?.availableTime || 0) + 1200 
+                      }, { merge: true });
+                    }
+                    setShowPaywall(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 px-4 rounded-xl font-medium transition-colors"
                 >
-                  Non merci, peut-être plus tard
+                  Simuler un paiement (Test)
+                </button>
+
+                <button 
+                  onClick={() => setShowPaywall(false)}
+                  className="w-full py-3 px-4 text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
+                >
+                  Fermer
                 </button>
               </div>
+              
+              <p className="text-xs text-zinc-600">
+                Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte. Utilisez le bouton "Simuler" pour tester la fonctionnalité.
+              </p>
             </div>
           </div>
         </div>
