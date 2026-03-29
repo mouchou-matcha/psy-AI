@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play } from 'lucide-react';
 import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
+import { LandingPage } from './components/LandingPage';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
@@ -134,10 +135,14 @@ export default function App() {
   const handleConsentSubmit = async () => {
     if (user && consentTOS && consentHealthData) {
       try {
-        await setDoc(doc(db, 'users', user.uid), {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        const existingData = docSnap.exists() ? docSnap.data() : {};
+        
+        await setDoc(docRef, {
           hasConsented: true,
           consentedAt: new Date().toISOString(),
-          availableTime: 600
+          availableTime: existingData.availableTime !== undefined ? existingData.availableTime : 600
         }, { merge: true });
         setShowConsentModal(false);
       } catch (err) {
@@ -446,6 +451,10 @@ export default function App() {
 
   if (!isAuthReady) {
     return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>;
+  }
+
+  if (!user) {
+    return <LandingPage onLogin={handleGoogleLogin} authError={authError} />;
   }
 
   return (
@@ -1522,7 +1531,7 @@ export default function App() {
                     <div className="text-xl font-semibold text-emerald-400">13 €</div>
                   </div>
                   <a 
-                    href={`https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                    href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
@@ -1545,7 +1554,7 @@ export default function App() {
                     <div className="text-xl font-semibold text-emerald-400">20 €</div>
                   </div>
                   <a 
-                    href={`https://buy.stripe.com/cNiaEPbmkgNtabEaqz9IQ02${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                    href={`https://buy.stripe.com/00w14f6208gXdnQ56f9IQ04${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
@@ -1609,7 +1618,7 @@ export default function App() {
 
               <div className="flex flex-col gap-3 pt-4">
                 <a 
-                  href={`https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                  href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"

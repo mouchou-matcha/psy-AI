@@ -61,19 +61,19 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['userId', 'date', 'summary', 'insights', 'tree_data', 'clinical_data', 'therapeutic_plan', 'anonymized_transcript']) &&
              data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
              isValidDateString(data.date) &&
-             data.summary is string && data.summary.size() < 10000 &&
-             data.insights is string && data.insights.size() < 10000 &&
-             data.tree_data is string && data.tree_data.size() < 50000 &&
-             data.clinical_data is string && data.clinical_data.size() < 50000 &&
-             data.therapeutic_plan is string && data.therapeutic_plan.size() < 50000 &&
+             data.summary is string && data.summary.size() < 500000 &&
+             data.insights is string && data.insights.size() < 500000 &&
+             data.tree_data is string && data.tree_data.size() < 500000 &&
+             data.clinical_data is string && data.clinical_data.size() < 500000 &&
+             data.therapeutic_plan is string && data.therapeutic_plan.size() < 500000 &&
              (!('anonymized_transcript' in data) || (data.anonymized_transcript is string && data.anonymized_transcript.size() < 500000));
     }
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['hasConsented', 'consentedAt']) &&
-             data.hasConsented is bool &&
-             data.consentedAt is string &&
-             isValidDateString(data.consentedAt);
+      return hasOnlyAllowedFields(['hasConsented', 'consentedAt', 'availableTime']) &&
+             (!('hasConsented' in data) || data.hasConsented is bool) &&
+             (!('consentedAt' in data) || (data.consentedAt is string && isValidDateString(data.consentedAt))) &&
+             (!('availableTime' in data) || data.availableTime is number);
     }
 
     match /users/{userId} {

@@ -1,5 +1,25 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application",
+      "type": "object",
+      "properties": {
+        "hasConsented": {
+          "type": "boolean",
+          "description": "Whether the user has consented to the terms"
+        },
+        "consentedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the user consented"
+        },
+        "availableTime": {
+          "type": "number",
+          "description": "The available time in seconds for the user"
+        }
+      }
+    },
     "PatientHistory": {
       "title": "PatientHistory",
       "description": "A session history for a patient",

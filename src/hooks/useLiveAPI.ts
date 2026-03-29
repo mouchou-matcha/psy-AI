@@ -406,7 +406,7 @@ RÈGLES VOCALES STRICTES :
 - GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.`;
 
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-3.1-flash-live-preview',
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -687,12 +687,12 @@ Transcription:\n${transcript}`,
         await addDoc(collection(db, 'patient_history'), {
           userId: user.uid,
           date: new Date().toISOString(),
-          summary: result.summary || 'Résumé non disponible.',
+          summary: typeof result.summary === 'string' ? result.summary : (result.summary ? JSON.stringify(result.summary) : 'Résumé non disponible.'),
           insights: JSON.stringify(result.insights || []),
           tree_data: JSON.stringify(result.tree_data || currentTree),
           clinical_data: JSON.stringify(result.clinical_data || {}),
           therapeutic_plan: JSON.stringify(result.therapeutic_plan || {}),
-          anonymized_transcript: result.anonymized_transcript || 'Transcription anonymisée non disponible.'
+          anonymized_transcript: typeof result.anonymized_transcript === 'string' ? result.anonymized_transcript : (result.anonymized_transcript ? JSON.stringify(result.anonymized_transcript) : 'Transcription anonymisée non disponible.')
         });
 
       } catch (e: any) {
