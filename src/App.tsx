@@ -1512,23 +1512,23 @@ export default function App() {
               </p>
 
               <div className="space-y-4">
-                {/* 20 Minutes Option */}
+                {/* 30 Minutes Option */}
                 <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <div className="text-zinc-100 font-medium">Forfait 20 minutes</div>
+                      <div className="text-zinc-100 font-medium">Forfait 30 minutes</div>
                       <div className="text-zinc-500 text-sm">Séance standard</div>
                     </div>
-                    <div className="text-xl font-semibold text-emerald-400">10 €</div>
+                    <div className="text-xl font-semibold text-emerald-400">13 €</div>
                   </div>
                   <a 
-                    href="https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01" 
+                    href={`https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
                   >
                     <Zap className="w-4 h-4" />
-                    Acheter 20 minutes
+                    Acheter 30 minutes
                   </a>
                 </div>
 
@@ -1542,10 +1542,10 @@ export default function App() {
                       <div className="text-zinc-100 font-medium">Forfait 1 heure</div>
                       <div className="text-zinc-500 text-sm">Thérapie approfondie</div>
                     </div>
-                    <div className="text-xl font-semibold text-emerald-400">25 €</div>
+                    <div className="text-xl font-semibold text-emerald-400">20 €</div>
                   </div>
                   <a 
-                    href="https://buy.stripe.com/cNiaEPbmkgNtabEaqz9IQ02" 
+                    href={`https://buy.stripe.com/cNiaEPbmkgNtabEaqz9IQ02${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
@@ -1561,8 +1561,11 @@ export default function App() {
                   onClick={() => {
                     // Dev simulation: Add 60 minutes (3600 seconds)
                     if (user) {
+                      const newTime = (timeLeft !== null ? timeLeft : (userData?.availableTime || 0)) + 3600;
+                      availableTimeRef.current = newTime;
+                      setTimeLeft(newTime);
                       setDoc(doc(db, 'users', user.uid), { 
-                        availableTime: (userData?.availableTime || 0) + 3600 
+                        availableTime: newTime 
                       }, { merge: true });
                     }
                     setIsCreditsPanelOpen(false);
@@ -1598,36 +1601,39 @@ export default function App() {
 
               <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex items-center justify-between">
                 <div className="text-left">
-                  <div className="text-zinc-100 font-medium">Forfait 20 minutes</div>
+                  <div className="text-zinc-100 font-medium">Forfait 30 minutes</div>
                   <div className="text-zinc-500 text-sm">Séance prolongée</div>
                 </div>
-                <div className="text-xl font-semibold text-emerald-400">10 €</div>
+                <div className="text-xl font-semibold text-emerald-400">13 €</div>
               </div>
 
               <div className="flex flex-col gap-3 pt-4">
                 <a 
-                  href="https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01" 
+                  href={`https://buy.stripe.com/5kQfZ9764fJp97AeGP9IQ01${user ? `?client_reference_id=${user.uid}` : ''}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
                 >
                   <Zap className="w-5 h-5" />
-                  Acheter 20 minutes
+                  Acheter 30 minutes
                 </a>
                 
                 <button 
                   onClick={() => {
-                    // Dev simulation: Add 20 minutes (1200 seconds)
+                    // Dev simulation: Add 30 minutes (1800 seconds)
                     if (user) {
+                      const newTime = (timeLeft !== null ? timeLeft : (userData?.availableTime || 0)) + 1800;
+                      availableTimeRef.current = newTime;
+                      setTimeLeft(newTime);
                       setDoc(doc(db, 'users', user.uid), { 
-                        availableTime: (userData?.availableTime || 0) + 1200 
+                        availableTime: newTime 
                       }, { merge: true });
                     }
                     setShowPaywall(false);
                   }}
                   className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 px-4 rounded-xl font-medium transition-colors"
                 >
-                  Simuler un paiement (Test)
+                  Simuler un paiement (Test +30m)
                 </button>
 
                 <button 
