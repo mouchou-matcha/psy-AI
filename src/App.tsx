@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play } from 'lucide-react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play, Info } from 'lucide-react';
 import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
+import { MindHeartLogo } from './components/MindHeartLogo';
 import { LandingPage } from './components/LandingPage';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
@@ -234,7 +235,7 @@ export default function App() {
 
     // --- Header Design ---
     // Top colored bar
-    doc.setFillColor(16, 185, 129); // emerald-500
+    doc.setFillColor(16, 185, 129); // teal-500
     doc.rect(0, 0, pageWidth, 6, 'F');
     
     // Light background for header area
@@ -277,7 +278,7 @@ export default function App() {
       doc.text(title.toUpperCase(), margin, cursorY);
       
       // Small accent line under title
-      doc.setDrawColor(16, 185, 129); // emerald-500
+      doc.setDrawColor(16, 185, 129); // teal-500
       doc.setLineWidth(0.5);
       doc.line(margin, cursorY + 2, margin + 15, cursorY + 2);
       
@@ -450,7 +451,7 @@ export default function App() {
   const latestPlanData = history.length > 0 ? parsePlanData(history[history.length - 1].therapeutic_plan) : null;
 
   if (!isAuthReady) {
-    return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><Loader2 className="w-8 h-8 text-emerald-500 animate-spin" /></div>;
+    return <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] flex items-center justify-center"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>;
   }
 
   if (!user) {
@@ -458,39 +459,44 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans relative overflow-hidden">
       
+      {/* Ambient glowing orbs */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+
       {/* Sidebar / Auth Panel */}
-      <div className="border-t md:border-t-0 md:border-r border-zinc-800 bg-zinc-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
+      <div className="border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
         <div className="hidden md:flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-            <Brain className="w-5 h-5 text-emerald-500" />
+          <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+            <MindHeartLogo className="w-5 h-5 text-teal-500" />
           </div>
           <h1 className="text-xl font-medium tracking-tight">Marie</h1>
         </div>
 
         {user ? (
           <div className="flex flex-col flex-1">
-            <div className="hidden md:block bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 mb-6">
+            <div className="hidden md:block bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-zinc-400" />}
+                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
+                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-slate-400" />}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-200">{user.displayName || user.email}</p>
-                  <p className="text-xs text-zinc-500">Patient connecté</p>
+                  <p className="text-sm font-medium text-slate-200">{user.displayName || user.email}</p>
+                  <p className="text-xs text-slate-500">Patient connecté</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <button 
                   onClick={() => setIsCreditsPanelOpen(true)}
-                  className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors group"
                 >
-                  <div className="flex items-center gap-2 text-emerald-400">
+                  <div className="flex items-center gap-2 text-teal-400">
                     <Zap className="w-4 h-4" /> 
                     <span className="text-xs font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-md group-hover:bg-emerald-500 group-hover:text-zinc-950 transition-colors">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-md group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors">
                     Recharger
                   </span>
                 </button>
@@ -498,13 +504,13 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setShowSettings(true)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
                 >
                   <Settings className="w-4 h-4" /> Paramètres
                 </button>
                 <button 
                   onClick={handleLogout}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-xs font-medium text-zinc-300"
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
                 >
                   <LogOut className="w-4 h-4" /> Déconnexion
                 </button>
@@ -512,52 +518,52 @@ export default function App() {
             </div>
 
             <div className="flex-1">
-              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Vos données</h3>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Vos données</h3>
               <div className="space-y-2">
                 <button 
                   onClick={() => setShowHistory(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
                 >
                   <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Historique</span>
+                    <Calendar className="w-4 h-4 text-teal-500" />
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Historique</span>
                   </div>
-                  <span className="text-xs bg-zinc-800 px-2 py-1 rounded-md text-zinc-400">{history.length}</span>
+                  <span className="text-xs bg-slate-800 px-2 py-1 rounded-md text-slate-400">{history.length}</span>
                 </button>
                 <button 
                   onClick={() => setShowTree(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
                 >
                   <div className="flex items-center gap-3">
                     <Network className="w-4 h-4 text-indigo-500" />
-                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Arbre Thérapeutique</span>
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Arbre Thérapeutique</span>
                   </div>
                 </button>
                 <button 
                   onClick={() => setShowPlan(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-colors border border-zinc-800/50 group"
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
                 >
                   <div className="flex items-center gap-3">
                     <ClipboardList className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm text-zinc-300 group-hover:text-zinc-100">Plan Thérapeutique</span>
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Plan Thérapeutique</span>
                   </div>
                 </button>
               </div>
 
               {/* Personnalité de l'IA Toggle */}
-              <div className="mt-6 pt-6 border-t border-zinc-800/50">
-                <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
+              <div className="mt-6 pt-6 border-t border-slate-800/50">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
                 <div className="space-y-2">
                   <button
                     onClick={() => setIsIncisiveMode(false)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-zinc-400 hover:bg-zinc-800/50 border border-transparent'}`}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
                   >
                     <Heart className="w-4 h-4" />
                     <span className="text-sm font-medium">Psy Empathique</span>
                   </button>
                   <button
                     onClick={() => setIsIncisiveMode(true)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-zinc-400 hover:bg-zinc-800/50 border border-transparent'}`}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
                   >
                     <Zap className="w-4 h-4" />
                     <span className="text-sm font-medium">Psy Électrochoc</span>
@@ -567,8 +573,8 @@ export default function App() {
 
               {/* Bilan Inline Section */}
               {latestClinicalData?.recommended_therapy?.type && (
-                <div className="mt-6 pt-6 border-t border-zinc-800/50">
-                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Type de professionnel conseillé</h3>
+                <div className="mt-6 pt-6 border-t border-slate-800/50">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Type de professionnel conseillé</h3>
                   <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 blur-2xl"></div>
                     <div className="relative z-10">
@@ -578,7 +584,7 @@ export default function App() {
                           {latestClinicalData.recommended_therapy.type}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3" title={latestClinicalData.recommended_therapy.reason}>
+                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-3" title={latestClinicalData.recommended_therapy.reason}>
                         {latestClinicalData.recommended_therapy.reason}
                       </p>
                     </div>
@@ -589,11 +595,11 @@ export default function App() {
           </div>
         ) : (
           <div className="hidden md:flex flex-col flex-1">
-            <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-5">
-              <h2 className="text-lg font-medium text-zinc-100 mb-1">
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-5">
+              <h2 className="text-lg font-medium text-slate-100 mb-1">
                 Connexion
               </h2>
-              <p className="text-xs text-zinc-400 mb-6">
+              <p className="text-xs text-slate-400 mb-6">
                 Accédez à votre dossier personnel.
               </p>
 
@@ -602,7 +608,7 @@ export default function App() {
 
                 <button 
                   onClick={handleGoogleLogin}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" />
                   Se connecter avec Google
@@ -617,36 +623,36 @@ export default function App() {
       <div className="flex flex-col items-center justify-center p-6 relative order-1 md:order-2 h-full overflow-hidden">
         
         {/* Mobile Top Bar (Auth & Logo) */}
-        <div className="md:hidden w-full max-w-md mb-8 flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4">
+        <div className="md:hidden w-full max-w-md mb-8 flex items-center justify-between bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-2xl p-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-              <Brain className="w-4 h-4 text-emerald-500" />
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+              <MindHeartLogo className="w-4 h-4 text-teal-500" />
             </div>
-            <span className="font-medium tracking-tight text-zinc-100">Marie</span>
+            <span className="font-medium tracking-tight text-slate-100">Marie</span>
           </div>
           
           {user ? (
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsCreditsPanelOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors text-xs font-medium text-emerald-400 group"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors text-xs font-medium text-teal-400 group"
               >
                 <Zap className="w-3 h-3" /> 
                 <span>{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
-                <span className="text-[10px] font-bold uppercase bg-emerald-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-emerald-500 group-hover:text-zinc-950 transition-colors">
+                <span className="text-[10px] font-bold uppercase bg-teal-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors">
                   +
                 </span>
               </button>
               <button 
                 onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300"
+                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
                 title="Paramètres et Confidentialité"
               >
                 <Settings className="w-4 h-4" />
               </button>
               <button 
                 onClick={handleLogout}
-                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-300"
+                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
                 title="Déconnexion"
               >
                 <LogOut className="w-4 h-4" />
@@ -655,7 +661,7 @@ export default function App() {
           ) : (
             <button 
               onClick={handleGoogleLogin}
-              className="bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
+              className="bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
             >
               <LogIn className="w-3 h-3" />
               Connexion
@@ -666,13 +672,13 @@ export default function App() {
         <div className="max-w-md w-full flex flex-col items-center space-y-12">
           {/* Header */}
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center p-4 bg-zinc-900 rounded-full mb-4 ring-1 ring-zinc-800 shadow-xl">
-              <Brain className="w-10 h-10 text-emerald-400" />
+            <div className="inline-flex items-center justify-center p-4 bg-slate-900 rounded-full mb-4 ring-1 ring-slate-800 shadow-xl">
+              <MindHeartLogo className="w-10 h-10 text-teal-400" />
             </div>
-            <h1 className="text-xl font-medium tracking-tight text-zinc-100">
+            <h1 className="text-xl font-medium tracking-tight text-slate-100">
               Marie
             </h1>
-            <p className="text-zinc-400 text-sm max-w-xs mx-auto leading-relaxed">
+            <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
               Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.
             </p>
             {!user && (
@@ -684,21 +690,21 @@ export default function App() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4 md:hidden">
                 <button 
                   onClick={() => setShowHistory(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
                 >
-                  <User className="w-4 h-4 mr-2 text-emerald-500" />
+                  <User className="w-4 h-4 mr-2 text-teal-500" />
                   Historique ({history.length})
                 </button>
                 <button 
                   onClick={() => setShowTree(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
                 >
                   <Network className="w-4 h-4 mr-2 text-indigo-500" />
                   Arbre Thérapeutique
                 </button>
                 <button 
                   onClick={() => setShowPlan(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 transition-colors ring-1 ring-zinc-800 text-xs text-zinc-300"
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
                 >
                   <ClipboardList className="w-4 h-4 mr-2 text-amber-500" />
                   Plan
@@ -709,7 +715,7 @@ export default function App() {
             {/* Mobile Bilan Inline Section */}
             {history.length > 0 && !hasStarted && latestClinicalData?.recommended_therapy?.type && (
               <div className="md:hidden mt-6 w-full max-w-xs mx-auto">
-                <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 text-center">Type de professionnel conseillé</h3>
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 text-center">Type de professionnel conseillé</h3>
                 <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Compass className="w-4 h-4 text-indigo-400" />
@@ -717,7 +723,7 @@ export default function App() {
                       {latestClinicalData.recommended_therapy.type}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
                     {latestClinicalData.recommended_therapy.reason}
                   </p>
                 </div>
@@ -732,41 +738,41 @@ export default function App() {
               {/* Pulsing background when speaking */}
               {isSpeaking && (
                 <>
-                  <div className="absolute w-32 h-32 bg-emerald-500/20 rounded-full animate-ping" />
-                  <div className="absolute w-40 h-40 bg-emerald-500/10 rounded-full animate-pulse" />
+                  <div className="absolute w-28 h-28 bg-teal-500/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="absolute w-32 h-32 bg-teal-500/20 rounded-full animate-pulse" />
                 </>
               )}
               <div 
                 onClick={() => {
                   if (isSpeaking) interrupt();
                 }}
-                className={`group relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.4)] cursor-pointer hover:bg-red-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-zinc-800 ring-1 ring-zinc-700'}`}
+                className={`group relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'bg-teal-500 shadow-[0_0_40px_rgba(20,184,166,0.4)] cursor-pointer hover:bg-red-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-slate-800 ring-1 ring-slate-700'}`}
                 title={isSpeaking ? "Cliquer pour interrompre l'IA" : ""}
               >
                 {isSpeaking ? (
                   <>
-                    <Activity className="w-10 h-10 text-zinc-950 group-hover:hidden" />
-                    <X className="w-10 h-10 text-zinc-950 hidden group-hover:block" />
+                    <Activity className="w-10 h-10 text-slate-950 group-hover:hidden" />
+                    <X className="w-10 h-10 text-slate-950 hidden group-hover:block" />
                   </>
                 ) : (
-                  <Activity className="w-10 h-10 text-emerald-500" />
+                  <Activity className="w-10 h-10 text-teal-500" />
                 )}
               </div>
             </div>
           ) : (
-            <div className="w-24 h-24 rounded-full bg-zinc-900 ring-1 ring-zinc-800 flex items-center justify-center opacity-50">
+            <div className="w-24 h-24 rounded-full bg-slate-900 ring-1 ring-slate-800 flex items-center justify-center opacity-50">
               {isSaving ? (
-                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
               ) : (
-                <MicOff className="w-8 h-8 text-zinc-600" />
+                <MicOff className="w-8 h-8 text-slate-600" />
               )}
             </div>
           )}
           
-          <div className="mt-8 text-sm font-medium tracking-wide text-zinc-500 uppercase flex flex-col items-center gap-2">
+          <div className="mt-8 text-sm font-medium tracking-wide text-slate-500 uppercase flex flex-col items-center gap-2">
             <span>{isConnected ? (isSpeaking ? 'Le psychologue parle...' : 'À votre écoute...') : isSaving ? 'Sauvegarde du dossier...' : 'Session terminée'}</span>
             {timeLeft !== null && (
-              <span className="text-xs text-emerald-500/80 font-mono bg-emerald-500/10 px-2 py-1 rounded-md">
+              <span className="text-xs text-teal-500/80 font-mono bg-teal-500/10 px-2 py-1 rounded-md">
                 Temps restant : {formatTime(timeLeft)}
               </span>
             )}
@@ -786,10 +792,10 @@ export default function App() {
           disabled={isSaving || !user}
           className={`group relative flex items-center justify-center w-full py-4 px-8 rounded-2xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             isConnected
-              ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 ring-1 ring-zinc-800'
+              ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 ring-1 ring-slate-800'
               : (userData?.availableTime !== undefined && userData.availableTime <= 0)
-                ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-lg shadow-amber-500/20'
-                : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/20'
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
+                : 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20'
           }`}
         >
           {isConnected ? (
@@ -815,7 +821,7 @@ export default function App() {
 
         {/* Footer info */}
         {!hasStarted && (
-          <p className="text-xs text-zinc-600 text-center max-w-xs">
+          <p className="text-xs text-slate-600 text-center max-w-xs">
             Assurez-vous d'être dans un endroit calme. Vos échanges sont traités en temps réel. Un résumé clinique est sauvegardé pour assurer le suivi.
           </p>
         )}
@@ -825,19 +831,19 @@ export default function App() {
       {/* History Modal */}
       {/* Delete Confirmation Modal */}
       {sessionToDelete && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-medium text-zinc-100 mb-4 flex items-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-xl font-medium text-slate-100 mb-4 flex items-center">
               <AlertTriangle className="w-5 h-5 mr-3 text-red-500" />
               Supprimer la séance
             </h3>
-            <p className="text-zinc-400 mb-6">
+            <p className="text-slate-400 mb-6">
               Êtes-vous sûr de vouloir supprimer cette séance ? Cela supprimera également les ajouts à l'arbre thérapeutique qui y sont liés. Cette action est irréversible.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setSessionToDelete(null)}
-                className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
               >
                 Annuler
               </button>
@@ -853,16 +859,16 @@ export default function App() {
       )}
 
       {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
-                <Brain className="w-5 h-5 mr-3 text-emerald-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <MindHeartLogo className="w-5 h-5 mr-3 text-teal-500" />
                 Votre Parcours Thérapeutique
               </h2>
               <button 
                 onClick={() => setShowHistory(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -870,7 +876,7 @@ export default function App() {
             
             <div className="p-6 overflow-y-auto flex-1 space-y-8">
               {history.length === 0 ? (
-                <p className="text-zinc-500 text-center py-8">Aucune session enregistrée pour le moment.</p>
+                <p className="text-slate-500 text-center py-8">Aucune session enregistrée pour le moment.</p>
               ) : (
                 <>
                   <div className="space-y-8">
@@ -881,7 +887,7 @@ export default function App() {
                       
                       return (
                         <div key={session.id} className="space-y-4">
-                      <div className="flex items-start justify-between text-sm font-medium text-zinc-400">
+                      <div className="flex items-start justify-between text-sm font-medium text-slate-400">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
@@ -892,13 +898,13 @@ export default function App() {
                           </div>
                           <button
                             onClick={() => handleDownloadPDF(clinicalData, session.date, session.id, session.summary, insights)}
-                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/50 w-fit"
+                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50 w-fit"
                             title="Télécharger le dossier clinique"
                           >
                             {copiedSessionId === session.id ? (
                               <>
-                                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                <span className="text-emerald-500">Téléchargé</span>
+                                <Check className="w-3.5 h-3.5 text-teal-500" />
+                                <span className="text-teal-500">Téléchargé</span>
                               </>
                             ) : (
                               <>
@@ -910,31 +916,31 @@ export default function App() {
                         </div>
                         <button
                           onClick={() => handleDeleteSession(session.id)}
-                          className="text-zinc-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-400/10"
+                          className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-400/10"
                           title="Supprimer cette séance"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                       
-                      <div className="bg-zinc-950/50 rounded-xl p-5 border border-zinc-800/50 space-y-4">
+                      <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50 space-y-4">
                         <div>
-                          <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Résumé de la séance</h3>
-                          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Résumé de la séance</h3>
+                          <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                             {session.summary}
                           </p>
                         </div>
                         
                         {insights.length > 0 && (
-                          <div className="pt-4 border-t border-zinc-800/50">
-                            <h3 className="text-xs font-semibold text-emerald-500/80 uppercase tracking-wider mb-3 flex items-center">
+                          <div className="pt-4 border-t border-slate-800/50">
+                            <h3 className="text-xs font-semibold text-teal-500/80 uppercase tracking-wider mb-3 flex items-center">
                               <Sparkles className="w-3 h-3 mr-1.5" />
                               Prises de conscience (Insights)
                             </h3>
                             <ul className="space-y-2">
                               {insights.map((insight: string, idx: number) => (
-                                <li key={idx} className="text-sm text-zinc-200 bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start">
-                                  <span className="text-emerald-500 mr-2 mt-0.5">•</span>
+                                <li key={idx} className="text-sm text-slate-200 bg-teal-500/5 border border-teal-500/10 rounded-lg p-3 flex items-start">
+                                  <span className="text-teal-500 mr-2 mt-0.5">•</span>
                                   <span className="leading-relaxed">{insight}</span>
                                 </li>
                               ))}
@@ -944,7 +950,7 @@ export default function App() {
 
                         {/* Clinical Data Section */}
                         {Object.keys(clinicalData).length > 0 && (
-                          <div className="pt-4 border-t border-zinc-800/50 space-y-4">
+                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
                             <div className="flex items-center justify-between mb-3">
                               <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider flex items-center">
                                 <FileText className="w-3 h-3 mr-1.5" />
@@ -954,31 +960,31 @@ export default function App() {
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {clinicalData.emotional_state && (
-                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50 md:col-span-2">
-                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50 md:col-span-2">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
                                     <HeartPulse className="w-3 h-3 mr-1.5 text-rose-400" /> État Émotionnel
                                   </h4>
-                                  <p className="text-sm text-zinc-300">{clinicalData.emotional_state}</p>
+                                  <p className="text-sm text-slate-300">{clinicalData.emotional_state}</p>
                                 </div>
                               )}
                               
                               {clinicalData.symptoms && clinicalData.symptoms.length > 0 && (
-                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
-                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
                                     <Stethoscope className="w-3 h-3 mr-1.5" /> Symptômes
                                   </h4>
-                                  <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
                                     {clinicalData.symptoms.map((s: string, i: number) => <li key={i}>{s}</li>)}
                                   </ul>
                                 </div>
                               )}
                               
                               {clinicalData.triggers && clinicalData.triggers.length > 0 && (
-                                <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
-                                  <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
                                     <AlertTriangle className="w-3 h-3 mr-1.5" /> Déclencheurs
                                   </h4>
-                                  <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
                                     {clinicalData.triggers.map((t: string, i: number) => <li key={i}>{t}</li>)}
                                   </ul>
                                 </div>
@@ -986,22 +992,22 @@ export default function App() {
                             </div>
 
                             {clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0 && (
-                              <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
-                                <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
                                   <ShieldCheck className="w-3 h-3 mr-1.5" /> Mécanismes de défense / adaptation
                                 </h4>
-                                <ul className="list-disc list-inside text-sm text-zinc-300 space-y-1">
+                                <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
                                   {clinicalData.defense_mechanisms.map((d: string, i: number) => <li key={i}>{d}</li>)}
                                 </ul>
                               </div>
                             )}
 
                             {clinicalData.risk_assessment && (
-                              <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50">
-                                <h4 className="text-xs font-medium text-zinc-400 flex items-center mb-2">
+                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
                                   <AlertTriangle className="w-3 h-3 mr-1.5 text-orange-400" /> Évaluation des risques
                                 </h4>
-                                <p className="text-sm text-zinc-300">{clinicalData.risk_assessment}</p>
+                                <p className="text-sm text-slate-300">{clinicalData.risk_assessment}</p>
                               </div>
                             )}
 
@@ -1019,7 +1025,7 @@ export default function App() {
 
                         {/* Therapeutic Plan Section */}
                         {planData && planData.focus && (
-                          <div className="pt-4 border-t border-zinc-800/50 space-y-4">
+                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
                             <h3 className="text-xs font-semibold text-amber-500/80 uppercase tracking-wider mb-3 flex items-center">
                               <Target className="w-3 h-3 mr-1.5" />
                               Plan d'Action
@@ -1031,8 +1037,8 @@ export default function App() {
                               {planData.actions && planData.actions.length > 0 && (
                                 <ul className="space-y-2 mt-3">
                                   {planData.actions.map((action: string, idx: number) => (
-                                    <li key={idx} className="text-sm text-zinc-300 flex items-start">
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0 mt-0.5" />
+                                    <li key={idx} className="text-sm text-slate-300 flex items-start">
+                                      <CheckCircle2 className="w-4 h-4 text-teal-500 mr-2 flex-shrink-0 mt-0.5" />
                                       <span>{action}</span>
                                     </li>
                                   ))}
@@ -1047,7 +1053,7 @@ export default function App() {
                                   </h4>
                                   <ul className="space-y-2">
                                     {planData.hygiene_and_wellbeing.map((item: string, idx: number) => (
-                                      <li key={idx} className="text-sm text-zinc-300 flex items-start">
+                                      <li key={idx} className="text-sm text-slate-300 flex items-start">
                                         <Sparkles className="w-4 h-4 text-rose-400 mr-2 flex-shrink-0 mt-0.5" />
                                         <span>{item}</span>
                                       </li>
@@ -1059,7 +1065,7 @@ export default function App() {
                               {planData.adjustments && (
                                 <div className="mt-4 pt-3 border-t border-amber-500/10">
                                   <p className="text-xs text-amber-500/70 uppercase tracking-wider mb-1">Ajustements</p>
-                                  <p className="text-sm text-zinc-400">{planData.adjustments}</p>
+                                  <p className="text-sm text-slate-400">{planData.adjustments}</p>
                                 </div>
                               )}
                             </div>
@@ -1079,34 +1085,41 @@ export default function App() {
 
       {/* Tree Modal */}
       {showTree && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/60 backdrop-blur-md">
-          <div className="bg-zinc-900 rounded-[24px] w-full max-w-5xl h-[85vh] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-zinc-800/50 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl rounded-[24px] w-full max-w-5xl h-[85vh] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-800/50 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/50 relative">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-20">
               <button 
                 onClick={() => setShowTree(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors absolute left-4"
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors absolute left-4"
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-lg font-semibold text-zinc-100 w-full text-center">
+              <h2 className="text-lg font-semibold text-slate-100 w-full flex items-center justify-center gap-2">
+                <Network className="w-5 h-5 text-indigo-400" />
                 Arbre Thérapeutique
+                <div className="group relative flex items-center">
+                  <Info className="w-4 h-4 text-slate-400 cursor-help hover:text-teal-400 transition-colors" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-3 bg-slate-800/90 backdrop-blur-md text-xs text-slate-200 rounded-xl border border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none text-center font-normal">
+                    Cette carte visuelle relie vos <span className="text-[#2DD4BF] font-medium">émotions</span>, vos <span className="text-[#818CF8] font-medium">symptômes</span> et leurs <span className="text-[#F472B6] font-medium">causes profondes</span> pour vous aider à comprendre votre progression.
+                  </div>
+                </div>
               </h2>
               <div className="w-9" /> {/* Spacer for centering */}
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 flex flex-col bg-zinc-950/30">
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col bg-slate-950/30">
               {history.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-zinc-500 text-center">Aucun arbre disponible pour le moment.</p>
+                  <p className="text-slate-500 text-center">Aucun arbre disponible pour le moment.</p>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col min-h-0 bg-zinc-900 rounded-2xl border border-zinc-800/50 overflow-hidden shadow-sm">
+                <div className="flex-1 flex flex-col min-h-0 bg-slate-900/40 backdrop-blur-md rounded-2xl border border-slate-800/50 overflow-hidden shadow-sm">
                   {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
                     <TherapyTree data={latestTreeData} />
                   ) : (
                     <div className="flex-1 flex items-center justify-center">
-                      <p className="text-zinc-500 text-center">L'arbre thérapeutique est en cours de construction.</p>
+                      <p className="text-slate-500 text-center">L'arbre thérapeutique est en cours de construction.</p>
                     </div>
                   )}
                 </div>
@@ -1117,16 +1130,16 @@ export default function App() {
       )}
       {/* Therapeutic Plan Modal */}
       {showPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
                 <ClipboardList className="w-5 h-5 mr-3 text-amber-500" />
                 Plan Thérapeutique
               </h2>
               <button 
                 onClick={() => setShowPlan(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1135,9 +1148,9 @@ export default function App() {
             <div className="p-6 overflow-y-auto flex-1 space-y-8">
               {history.length === 0 || !latestPlanData || !latestPlanData.focus ? (
                 <div className="text-center py-12">
-                  <Target className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                  <p className="text-zinc-400">Aucun plan thérapeutique n'a encore été généré.</p>
-                  <p className="text-zinc-500 text-sm mt-2">Un plan sera proposé à la fin de votre prochaine séance.</p>
+                  <Target className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                  <p className="text-slate-400">Aucun plan thérapeutique n'a encore été généré.</p>
+                  <p className="text-slate-500 text-sm mt-2">Un plan sera proposé à la fin de votre prochaine séance.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -1146,23 +1159,23 @@ export default function App() {
                     <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center mb-3 relative z-10">
                       <Target className="w-4 h-4 mr-2" /> Objectif Principal
                     </h3>
-                    <p className="text-zinc-200 text-lg relative z-10 font-medium">
+                    <p className="text-slate-200 text-lg relative z-10 font-medium">
                       {latestPlanData.focus}
                     </p>
                   </div>
 
                   {latestPlanData.actions && latestPlanData.actions.length > 0 && (
-                    <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-xl p-6">
-                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider flex items-center mb-4">
-                        <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Actions & Exercices Recommandés
+                    <div className="bg-slate-950/50 border border-slate-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-4">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-teal-500" /> Actions & Exercices Recommandés
                       </h3>
                       <ul className="space-y-3">
                         {latestPlanData.actions.map((action: string, idx: number) => (
                           <li key={idx} className="flex items-start">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
                               {idx + 1}
                             </span>
-                            <span className="text-zinc-300 leading-relaxed">{action}</span>
+                            <span className="text-slate-300 leading-relaxed">{action}</span>
                           </li>
                         ))}
                       </ul>
@@ -1178,7 +1191,7 @@ export default function App() {
                         {latestPlanData.hygiene_and_wellbeing.map((item: string, idx: number) => (
                           <li key={idx} className="flex items-start">
                             <Sparkles className="w-5 h-5 text-rose-400 mr-3 flex-shrink-0 mt-0.5" />
-                            <span className="text-zinc-300 leading-relaxed">{item}</span>
+                            <span className="text-slate-300 leading-relaxed">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -1186,18 +1199,18 @@ export default function App() {
                   )}
 
                   {latestPlanData.adjustments && (
-                    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-6">
-                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider flex items-center mb-3">
+                    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-3">
                         <Activity className="w-4 h-4 mr-2 text-blue-400" /> Ajustements & Remarques
                       </h3>
-                      <p className="text-zinc-300 leading-relaxed">
+                      <p className="text-slate-300 leading-relaxed">
                         {latestPlanData.adjustments}
                       </p>
                     </div>
                   )}
 
                   <div className="text-center mt-8">
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-slate-500">
                       Ce plan sera évalué et ajusté avec vous lors de la prochaine séance.
                     </p>
                   </div>
@@ -1210,16 +1223,16 @@ export default function App() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
-                <Settings className="w-5 h-5 mr-3 text-zinc-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <Settings className="w-5 h-5 mr-3 text-slate-400" />
                 Paramètres & Confidentialité
               </h2>
               <button 
                 onClick={() => setShowSettings(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1227,14 +1240,14 @@ export default function App() {
             
             <div className="p-6 space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Préférences</h3>
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Préférences</h3>
                 
-                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
                   <div className="flex items-center gap-3">
-                    <Volume2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <Volume2 className="w-5 h-5 text-teal-400 flex-shrink-0" />
                     <div className="text-left">
-                      <p className="text-sm font-medium text-zinc-200">Voix de l'assistant</p>
-                      <p className="text-xs text-zinc-500">Choisissez la voix qui vous convient le mieux.</p>
+                      <p className="text-sm font-medium text-slate-200">Voix de l'assistant</p>
+                      <p className="text-xs text-slate-500">Choisissez la voix qui vous convient le mieux.</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -1244,7 +1257,7 @@ export default function App() {
                         setVoiceName(e.target.value);
                         localStorage.setItem('marie_voice', e.target.value);
                       }}
-                      className="flex-1 sm:flex-none bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2"
+                      className="flex-1 sm:flex-none bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block p-2"
                     >
                       <option value="Zephyr">Zephyr</option>
                       <option value="Kore">Kore</option>
@@ -1255,7 +1268,7 @@ export default function App() {
                     <button
                       onClick={handlePreviewVoice}
                       disabled={isPreviewing}
-                      className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 rounded-lg bg-teal-500/10 text-teal-500 hover:bg-teal-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Écouter un aperçu"
                     >
                       {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
@@ -1265,33 +1278,33 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
                 
                 <button 
                   onClick={() => {
                     setShowSettings(false);
                     setShowPrivacyPolicy(true);
                   }}
-                  className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors border border-zinc-700/50 group"
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
                 >
                   <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                    <ShieldCheck className="w-5 h-5 text-teal-400" />
                     <div className="text-left">
-                      <p className="text-sm font-medium text-zinc-200 group-hover:text-zinc-100">Politique de confidentialité</p>
-                      <p className="text-xs text-zinc-500">Consulter les règles de traitement de vos données.</p>
+                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Politique de confidentialité</p>
+                      <p className="text-xs text-slate-500">Consulter les règles de traitement de vos données.</p>
                     </div>
                   </div>
                 </button>
 
                 <button 
                   onClick={handleDownloadData}
-                  className="w-full flex items-center justify-between p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors border border-zinc-700/50 group"
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
                 >
                   <div className="flex items-center gap-3">
                     <Download className="w-5 h-5 text-blue-400" />
                     <div className="text-left">
-                      <p className="text-sm font-medium text-zinc-200 group-hover:text-zinc-100">Exporter mes données</p>
-                      <p className="text-xs text-zinc-500">Télécharger tout l'historique de vos séances au format JSON.</p>
+                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Exporter mes données</p>
+                      <p className="text-xs text-slate-500">Télécharger tout l'historique de vos séances au format JSON.</p>
                     </div>
                   </div>
                 </button>
@@ -1321,38 +1334,38 @@ export default function App() {
 
       {/* Consent Modal */}
       {showConsentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-zinc-800">
-              <h2 className="text-2xl font-medium text-zinc-100 flex items-center">
-                <ShieldCheck className="w-6 h-6 mr-3 text-emerald-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-slate-800">
+              <h2 className="text-2xl font-medium text-slate-100 flex items-center">
+                <ShieldCheck className="w-6 h-6 mr-3 text-teal-500" />
                 Création de compte & Consentement
               </h2>
             </div>
             
             <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
-              <p className="text-sm text-zinc-300 leading-relaxed">
+              <p className="text-sm text-slate-300 leading-relaxed">
                 Bienvenue sur Marie. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
               </p>
 
               <div className="space-y-4">
-                <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 overflow-hidden">
+                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
                   <div className="flex items-start gap-3 p-4">
                     <div className="flex-shrink-0 mt-0.5">
                       <input 
                         type="checkbox" 
                         checked={consentTOS}
                         onChange={(e) => setConsentTOS(e.target.checked)}
-                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900 cursor-pointer"
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
                       />
                     </div>
                     <div className="flex-1 cursor-pointer" onClick={() => setExpandedTOS(!expandedTOS)}>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-zinc-200">Conditions Générales d'Utilisation</p>
-                        {expandedTOS ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                        <p className="text-sm font-medium text-slate-200">Conditions Générales d'Utilisation</p>
+                        {expandedTOS ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                       </div>
                       {expandedTOS && (
-                        <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
                           <p><strong>1. Nature du Service :</strong> Marie est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
                           <p><strong>2. Urgences :</strong> Marie n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
                           <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte (hallucinations). Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
@@ -1364,23 +1377,23 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-zinc-800/50 border border-zinc-700/50 overflow-hidden">
+                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
                   <div className="flex items-start gap-3 p-4">
                     <div className="flex-shrink-0 mt-0.5">
                       <input 
                         type="checkbox" 
                         checked={consentHealthData}
                         onChange={(e) => setConsentHealthData(e.target.checked)}
-                        className="w-5 h-5 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900 cursor-pointer"
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
                       />
                     </div>
                     <div className="flex-1 cursor-pointer" onClick={() => setExpandedHealth(!expandedHealth)}>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-zinc-200">Traitement des Données Sensibles (RGPD)</p>
-                        {expandedHealth ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                        <p className="text-sm font-medium text-slate-200">Traitement des Données Sensibles (RGPD)</p>
+                        {expandedHealth ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                       </div>
                       {expandedHealth && (
-                        <div className="mt-3 text-xs text-zinc-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
                           <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant Marie.</p>
                           <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
                           <p><strong>3. Sous-traitants & IA Privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>strictement pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
@@ -1394,17 +1407,17 @@ export default function App() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-zinc-800 flex justify-end gap-3">
+            <div className="p-6 border-t border-slate-800 flex justify-end gap-3">
               <button 
                 onClick={handleLogout}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
               >
                 Refuser et se déconnecter
               </button>
               <button 
                 onClick={handleConsentSubmit}
                 disabled={!consentTOS || !consentHealthData}
-                className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 rounded-lg text-sm font-medium bg-teal-500 hover:bg-teal-600 text-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
                 Créer mon compte
@@ -1416,29 +1429,29 @@ export default function App() {
 
       {/* Privacy Policy Modal */}
       {showPrivacyPolicy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-              <h2 className="text-xl font-medium text-zinc-100 flex items-center">
-                <ShieldCheck className="w-5 h-5 mr-3 text-emerald-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <ShieldCheck className="w-5 h-5 mr-3 text-teal-500" />
                 Politique de Confidentialité
               </h2>
               <button 
                 onClick={() => setShowPrivacyPolicy(false)}
-                className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] text-sm text-zinc-300">
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] text-sm text-slate-300">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-zinc-100">1. Introduction</h3>
+                <h3 className="text-lg font-medium text-slate-100">1. Introduction</h3>
                 <p>
                   La présente politique de confidentialité explique comment Marie collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
                 </p>
 
-                <h3 className="text-lg font-medium text-zinc-100">2. Données collectées</h3>
+                <h3 className="text-lg font-medium text-slate-100">2. Données collectées</h3>
                 <p>
                   <strong>Données de compte :</strong> Lors de votre connexion via Google, nous collectons votre adresse email, votre nom d'utilisateur et votre photo de profil fournis par Google.
                 </p>
@@ -1449,20 +1462,20 @@ export default function App() {
                   <strong>Données générées :</strong> L'IA génère des résumés, des analyses cliniques et des plans thérapeutiques basés sur vos conversations.
                 </p>
 
-                <h3 className="text-lg font-medium text-zinc-100">3. Utilisation des données et IA Privée</h3>
+                <h3 className="text-lg font-medium text-slate-100">3. Utilisation des données et IA Privée</h3>
                 <p>
                   Vos données sont utilisées <strong>exclusivement</strong> pour vous fournir le service d'accompagnement psychologique.
                 </p>
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 text-emerald-400">
+                <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-4 text-teal-400">
                   <strong>Garantie de non-entraînement :</strong> Nous utilisons une infrastructure payante (Google Cloud API). Vos données vocales et textuelles <strong>ne sont pas utilisées</strong> par Google ou par nous-mêmes pour entraîner, améliorer ou perfectionner des modèles d'intelligence artificielle.
                 </div>
 
-                <h3 className="text-lg font-medium text-zinc-100">4. Stockage et Sécurité</h3>
+                <h3 className="text-lg font-medium text-slate-100">4. Stockage et Sécurité</h3>
                 <p>
                   Vos résumés et analyses sont stockés de manière sécurisée sur les serveurs de Firebase (Google Cloud). Les flux audio en temps réel ne sont <strong>pas stockés</strong> après leur traitement immédiat.
                 </p>
 
-                <h3 className="text-lg font-medium text-zinc-100">5. Vos droits (RGPD)</h3>
+                <h3 className="text-lg font-medium text-slate-100">5. Vos droits (RGPD)</h3>
                 <p>
                   Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants :
                 </p>
@@ -1472,23 +1485,23 @@ export default function App() {
                   <li><strong>Droit de rectification :</strong> Vous pouvez modifier les informations de votre profil via votre compte Google.</li>
                 </ul>
 
-                <h3 className="text-lg font-medium text-zinc-100">6. Cookies et Traceurs</h3>
+                <h3 className="text-lg font-medium text-slate-100">6. Cookies et Traceurs</h3>
                 <p>
                   Marie n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
                 </p>
 
-                <h3 className="text-lg font-medium text-zinc-100">7. Mentions Légales</h3>
+                <h3 className="text-lg font-medium text-slate-100">7. Mentions Légales</h3>
                 <p>
                   <strong>Éditeur du service :</strong> Marie<br />
                   <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (Serveurs de données situés à Londres, Royaume-Uni - région <em>europe-west2</em>, en stricte conformité avec le RGPD).
                 </p>
 
-                <h3 className="text-lg font-medium text-zinc-100">8. Contact et Exercice de vos droits</h3>
+                <h3 className="text-lg font-medium text-slate-100">8. Contact et Exercice de vos droits</h3>
                 <p>
                   Pour toute question relative à la protection de vos données personnelles, ou pour exercer vos droits (accès, rectification, suppression), vous pouvez nous contacter directement à l'adresse suivante :
                 </p>
-                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-3 inline-block">
-                  <a href="mailto:julyand36@gmail.com" className="text-emerald-400 hover:text-emerald-300 font-medium">
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 inline-block">
+                  <a href="mailto:julyand36@gmail.com" className="text-teal-400 hover:text-teal-300 font-medium">
                     julyand36@gmail.com
                   </a>
                 </div>
@@ -1500,41 +1513,41 @@ export default function App() {
 
       {/* Credits Panel Modal */}
       {isCreditsPanelOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-emerald-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
             <div className="p-8 text-center space-y-6">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-medium text-zinc-100 flex items-center gap-2">
-                  <Zap className="w-6 h-6 text-emerald-500" />
+                <h2 className="text-2xl font-medium text-slate-100 flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-teal-500" />
                   Recharger vos crédits
                 </h2>
                 <button 
                   onClick={() => setIsCreditsPanelOpen(false)}
-                  className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-full transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <p className="text-zinc-400 text-sm leading-relaxed text-left">
+              <p className="text-slate-400 text-sm leading-relaxed text-left">
                 Marie fonctionne avec un système de crédits de temps. Vous ne payez que pour le temps de séance que vous consommez. Le temps non utilisé est conservé pour vos prochaines séances.
               </p>
 
               <div className="space-y-4">
                 {/* 30 Minutes Option */}
-                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex flex-col gap-4">
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <div className="text-zinc-100 font-medium">Forfait 30 minutes</div>
-                      <div className="text-zinc-500 text-sm">Séance standard</div>
+                      <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
+                      <div className="text-slate-500 text-sm">Séance standard</div>
                     </div>
-                    <div className="text-xl font-semibold text-emerald-400">13 €</div>
+                    <div className="text-xl font-semibold text-teal-400">13 €</div>
                   </div>
                   <a 
                     href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
                   >
                     <Zap className="w-4 h-4" />
                     Acheter 30 minutes
@@ -1542,22 +1555,22 @@ export default function App() {
                 </div>
 
                 {/* 1 Hour Option */}
-                <div className="bg-zinc-800/50 border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                <div className="bg-slate-800/50 border border-teal-500/30 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-teal-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
                     Recommandé
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <div className="text-zinc-100 font-medium">Forfait 1 heure</div>
-                      <div className="text-zinc-500 text-sm">Thérapie approfondie</div>
+                      <div className="text-slate-100 font-medium">Forfait 1 heure</div>
+                      <div className="text-slate-500 text-sm">Thérapie approfondie</div>
                     </div>
-                    <div className="text-xl font-semibold text-emerald-400">20 €</div>
+                    <div className="text-xl font-semibold text-teal-400">20 €</div>
                   </div>
                   <a 
                     href={`https://buy.stripe.com/00w14f6208gXdnQ56f9IQ04${user ? `?client_reference_id=${user.uid}` : ''}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
                   >
                     <Zap className="w-4 h-4" />
                     Acheter 1 heure
@@ -1565,7 +1578,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-zinc-800/50">
+              <div className="pt-4 border-t border-slate-800/50">
                 <button 
                   onClick={() => {
                     // Dev simulation: Add 60 minutes (3600 seconds)
@@ -1579,11 +1592,11 @@ export default function App() {
                     }
                     setIsCreditsPanelOpen(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 px-4 rounded-xl font-medium transition-colors text-sm"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 px-4 rounded-xl font-medium transition-colors text-sm"
                 >
                   Simuler un paiement (Test +1h)
                 </button>
-                <p className="text-xs text-zinc-600 mt-3">
+                <p className="text-xs text-slate-600 mt-3">
                   Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte.
                 </p>
               </div>
@@ -1594,26 +1607,26 @@ export default function App() {
 
       {/* Paywall Modal */}
       {showPaywall && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md">
-          <div className="bg-zinc-900 border border-emerald-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
             <div className="p-8 text-center space-y-6">
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-                <Calendar className="w-8 h-8 text-emerald-500" />
+              <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto">
+                <Calendar className="w-8 h-8 text-teal-500" />
               </div>
               
               <div className="space-y-2">
-                <h2 className="text-2xl font-medium text-zinc-100">Temps écoulé</h2>
-                <p className="text-zinc-400 text-sm leading-relaxed">
+                <h2 className="text-2xl font-medium text-slate-100">Temps écoulé</h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
                   Votre crédit de temps gratuit (10 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
                 </p>
               </div>
 
-              <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between">
                 <div className="text-left">
-                  <div className="text-zinc-100 font-medium">Forfait 30 minutes</div>
-                  <div className="text-zinc-500 text-sm">Séance prolongée</div>
+                  <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
+                  <div className="text-slate-500 text-sm">Séance prolongée</div>
                 </div>
-                <div className="text-xl font-semibold text-emerald-400">13 €</div>
+                <div className="text-xl font-semibold text-teal-400">13 €</div>
               </div>
 
               <div className="flex flex-col gap-3 pt-4">
@@ -1621,7 +1634,7 @@ export default function App() {
                   href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
                 >
                   <Zap className="w-5 h-5" />
                   Acheter 30 minutes
@@ -1640,20 +1653,20 @@ export default function App() {
                     }
                     setShowPaywall(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-3 px-4 rounded-xl font-medium transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 px-4 rounded-xl font-medium transition-colors"
                 >
                   Simuler un paiement (Test +30m)
                 </button>
 
                 <button 
                   onClick={() => setShowPaywall(false)}
-                  className="w-full py-3 px-4 text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors"
+                  className="w-full py-3 px-4 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
                 >
                   Fermer
                 </button>
               </div>
               
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-slate-600">
                 Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte. Utilisez le bouton "Simuler" pour tester la fonctionnalité.
               </p>
             </div>
