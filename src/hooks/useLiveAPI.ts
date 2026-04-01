@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Type } from '@google/genai';
 import { getAudioWorkletUrl } from '../lib/audioWorklet';
 import { EMOTIONAL_ANALYSIS_INSTRUCTION, CLINICAL_SCENARIOS, KNOWLEDGE_BASE, INCISIVE_INSTRUCTION } from '../lib/psychologyKnowledge';
 import { db } from '../firebase';
@@ -103,7 +103,7 @@ export async function previewVoice(voiceName: string): Promise<void> {
   }
 }
 
-export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr') {
+export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr', onEmergency?: () => void) {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const messagesRef = useRef<{ role: string; text: string }[]>([]);
@@ -347,12 +347,13 @@ Pour enrichir ton analyse, intègre les concepts académiques et scientifiques s
 
 J. PROTOCOLE D'URGENCE ABSOLUE (Suicide, Auto-mutilation, Homicide, Violence)
 Si l'utilisateur exprime des idées suicidaires, des envies de meurtre, des intentions d'auto-mutilation ou toute autre menace imminente pour sa vie ou celle d'autrui, TU DOIS IMMÉDIATEMENT CHANGER DE POSTURE :
-1. Arrête toute analyse psychologique profonde, recherche de causes racines ou "challenge" cognitif.
-2. Adopte un ton extrêmement calme, soutenant, direct et protecteur.
-3. Fais preuve d'une empathie inconditionnelle et immédiate ("Je suis là, j'entends ta souffrance, tu n'es pas seul(e)").
-4. Évalue doucement l'urgence sans brusquer (ex: "Où es-tu en ce moment ?", "Es-tu en sécurité là où tu te trouves ?").
-5. Dirige IMPÉRATIVEMENT et CLAIREMENT vers des secours humains professionnels. Donne les numéros d'urgence : le 112 (Urgences Europe), le 15 (SAMU en France), le 3114 (Numéro national de prévention du suicide en France), ou le 911 (Amérique du Nord). Conseille d'aller aux urgences de l'hôpital le plus proche.
-6. Reste avec l'utilisateur, encourage-le à parler à un proche ou à appeler les secours pendant que vous discutez. Ne le juge jamais, ne fais pas la morale. Ton seul but est de le maintenir en sécurité et de l'orienter vers une aide humaine immédiate.
+1. DÉCLENCHE IMMÉDIATEMENT L'OUTIL 'triggerEmergencyProtocol' pour afficher les numéros d'urgence sur l'écran de l'utilisateur. C'est ta priorité absolue.
+2. Arrête toute analyse psychologique profonde, recherche de causes racines ou "challenge" cognitif.
+3. Adopte un ton extrêmement calme, soutenant, direct et protecteur.
+4. Fais preuve d'une empathie inconditionnelle et immédiate ("Je suis là, j'entends ta souffrance, tu n'es pas seul(e)").
+5. Évalue doucement l'urgence sans brusquer (ex: "Où es-tu en ce moment ?", "Es-tu en sécurité là où tu te trouves ?").
+6. Dirige IMPÉRATIVEMENT et CLAIREMENT vers des secours humains professionnels. Donne les numéros d'urgence : le 112 (Urgences Europe), le 15 (SAMU en France), le 3114 (Numéro national de prévention du suicide en France), ou le 911 (Amérique du Nord). Conseille d'aller aux urgences de l'hôpital le plus proche.
+7. Reste avec l'utilisateur, encourage-le à parler à un proche ou à appeler les secours pendant que vous discutez. Ne le juge jamais, ne fais pas la morale. Ton seul but est de le maintenir en sécurité et de l'orienter vers une aide humaine immédiate.
 
 K. RECOMMANDATION DE SPÉCIALISTES
 Si, au cours de ton analyse, tu perçois qu'un accompagnement humain spécifique serait particulièrement bénéfique ou plus efficace pour l'utilisateur, n'hésite pas à lui suggérer de consulter un professionnel adapté à sa situation. Explique-lui brièvement pourquoi cette spécialité serait pertinente pour lui.
@@ -366,14 +367,16 @@ Voici les spécialités que tu peux recommander :
 - Psychologue systémicien / familial (thérapie de couple, conflits familiaux)
 - Psychocriminologue (victimes, justice)
 
-L. RÈGLE ABSOLUE (CRITIQUE POUR LE TEMPS DE RÉPONSE) :
+L. BASE DE CONNAISSANCES SPÉCIFIQUE (LIVRES DE RÉFÉRENCE)
+Tu dois t'appuyer sur les concepts de ces ouvrages majeurs pour formuler tes réponses et analyses :
+- "Introduction à la psychologie" de David G. Myers : pour les concepts fondamentaux de la psychologie, les biais cognitifs, l'apprentissage et la mémoire.
+- "L'homme qui prenait sa femme pour un chapeau" d'Oliver Sacks : pour comprendre la complexité de l'esprit humain, les troubles neurologiques et l'importance de l'empathie face à la différence.
+- "Thinking, Fast and Slow" (Système 1 / Système 2) de Daniel Kahneman : pour analyser les biais cognitifs, les décisions irrationnelles et les réactions impulsives (Système 1) versus la réflexion analytique (Système 2).
+
+M. RÈGLE ABSOLUE (CRITIQUE POUR LE TEMPS DE RÉPONSE) :
 NE FAIS AUCUN COMMENTAIRE INTERNE. NE DÉCRIS PAS CE QUE TU FAIS. COMMENCE DIRECTEMENT PAR PARLER AU PATIENT. N'écris JAMAIS de texte comme "**Initiating Exploration**" ou "I'm beginning the process". Tes mots doivent être UNIQUEMENT ce que tu dis à voix haute au patient. Aucun préambule, aucune réflexion écrite.
 
-${isIncisiveMode ? `MODE INCISIF (ÉLECTROCHOC) ACTIVÉ : 
-- Tu dois être "cash" et très direct.
-- N'hésite pas à confronter l'utilisateur à ses contradictions de manière très franche.
-- Dis-lui clairement où il est injuste, où il fuit, où il manque d’honnêteté ou de courage.
-- Tu peux être cash et direct, mais toujours dans l’idée de l'aider à progresser, pas de le juger gratuitement.` : `MODE NORMAL (ÉLECTROCHOC DÉSACTIVÉ) : 
+${isIncisiveMode ? INCISIVE_INSTRUCTION : `MODE NORMAL (ÉLECTROCHOC DÉSACTIVÉ) : 
 - Reste bienveillant, doux et empathique. 
 - Ne sois pas "cash" ou trop direct. 
 - Accompagne le patient en douceur, sans le brusquer.
@@ -403,7 +406,13 @@ RÈGLES VOCALES STRICTES :
 - Parle d'une voix de femme fluide, profonde, posée et très naturelle.
 - Reste très bref pour une réactivité maximale.
 - NE RÉSUME PAS et NE RÉPÈTE PAS ce que l'utilisateur vient de dire. Réponds directement.
-- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.`;
+- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.
+
+${KNOWLEDGE_BASE}
+
+${EMOTIONAL_ANALYSIS_INSTRUCTION}
+
+${CLINICAL_SCENARIOS}`;
 
       const sessionPromise = ai.live.connect({
         model: 'gemini-3.1-flash-live-preview',
@@ -415,6 +424,26 @@ RÈGLES VOCALES STRICTES :
           systemInstruction: systemInstruction,
           outputAudioTranscription: {},
           inputAudioTranscription: {},
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "triggerEmergencyProtocol",
+                  description: "Déclenche l'affichage immédiat des numéros d'urgence sur l'écran de l'utilisateur. À utiliser OBLIGATOIREMENT et IMMÉDIATEMENT si l'utilisateur exprime des intentions de suicide, d'auto-mutilation, de meurtre ou de violence envers lui-même ou autrui.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      reason: {
+                        type: Type.STRING,
+                        description: "La raison du déclenchement (ex: 'Idées suicidaires', 'Menace de violence')"
+                      }
+                    },
+                    required: ["reason"]
+                  }
+                }
+              ]
+            }
+          ]
         },
         callbacks: {
           onopen: () => {
@@ -429,12 +458,8 @@ RÈGLES VOCALES STRICTES :
             sessionPromise.then((session) => {
               setTimeout(() => {
                 try {
-                  session.sendClientContent({
-                    turns: [{
-                      role: "user",
-                      parts: [{ text: "La séance commence. Bonjour, je t'écoute." }]
-                    }],
-                    turnComplete: true
+                  session.sendRealtimeInput({
+                    text: "La séance commence. Bonjour, je t'écoute."
                   });
                 } catch (e) {
                   console.error("Error sending initial prompt:", e);
@@ -450,7 +475,7 @@ RÈGLES VOCALES STRICTES :
 
               sessionPromise.then((session) => {
                 session.sendRealtimeInput({
-                  media: { data: base64Data, mimeType: 'audio/pcm;rate=16000' },
+                  audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' },
                 });
               }).catch(() => {}); // Ignore errors here, handled by main catch
             };
@@ -520,6 +545,21 @@ RÈGLES VOCALES STRICTES :
 
             const modelTurn = message.serverContent?.modelTurn;
             if (modelTurn) {
+              for (const part of modelTurn.parts) {
+                if (part.functionCall && part.functionCall.name === 'triggerEmergencyProtocol') {
+                  if (onEmergency) onEmergency();
+                  sessionPromise.then(session => {
+                    session.sendToolResponse({
+                      functionResponses: [{
+                        name: 'triggerEmergencyProtocol',
+                        id: part.functionCall!.id,
+                        response: { result: "L'interface d'urgence a été affichée à l'utilisateur." }
+                      }]
+                    });
+                  });
+                }
+              }
+
               const textParts = modelTurn.parts.filter((p) => p.text).map((p) => p.text);
               if (textParts.length > 0) {
                 const text = textParts.join('');

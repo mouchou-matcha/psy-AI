@@ -102,5 +102,8 @@ Cette base de données regroupe les concepts cliniques, psychiatriques et neuros
 
 8. PSYCHOLOGIE EXISTENTIELLE ET HUMANISTE
 - Irvin Yalom : Les 4 angoisses existentielles fondamentales qui sous-tendent nos névroses : La mort, L'isolement fondamental, La liberté (et son fardeau de responsabilité), L'absence de sens.
-- Viktor Frankl (Logothérapie) : La volonté de sens comme motivation première de l'être humain.
+9. LIVRES DE RÉFÉRENCE MAJEURS
+- "Introduction à la psychologie" de David G. Myers : Concepts fondamentaux, biais cognitifs, apprentissage, mémoire et fonctionnement global de l'esprit humain.
+- "L'homme qui prenait sa femme pour un chapeau" d'Oliver Sacks : Compréhension de la complexité neurologique, des troubles de la perception et de l'importance de l'empathie et de l'humanité face à la différence clinique.
+- "Thinking, Fast and Slow" (Système 1 / Système 2) de Daniel Kahneman : Analyse approfondie des biais cognitifs, des heuristiques de jugement, des décisions irrationnelles (Système 1) et de la nécessité d'activer la réflexion analytique (Système 2) pour contrer les automatismes.
 `;

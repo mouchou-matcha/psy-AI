@@ -29,7 +29,8 @@ export default function App() {
   const [voiceName, setVoiceName] = useState<string>(() => {
     return localStorage.getItem('marie_voice') || 'Zephyr';
   });
-  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, () => setShowEmergencyModal(true));
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
@@ -487,18 +488,18 @@ export default function App() {
                   <p className="text-xs text-slate-500">Patient connecté</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-col gap-2 mb-2">
                 <button 
                   onClick={() => setIsCreditsPanelOpen(true)}
-                  className="flex-1 flex items-center justify-between px-3 py-2 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors group"
+                  className="w-full flex flex-col gap-2 p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors group"
                 >
                   <div className="flex items-center gap-2 text-teal-400">
-                    <Zap className="w-4 h-4" /> 
-                    <span className="text-xs font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                    <Zap className="w-4 h-4 shrink-0" /> 
+                    <span className="text-sm font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-md group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors">
+                  <div className="w-full bg-teal-500/20 text-teal-400 py-2 rounded-lg text-xs font-bold uppercase tracking-wider group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors text-center">
                     Recharger
-                  </span>
+                  </div>
                 </button>
               </div>
               <div className="flex items-center gap-2">
@@ -635,11 +636,11 @@ export default function App() {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsCreditsPanelOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors text-xs font-medium text-teal-400 group"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors text-xs font-medium text-teal-400 group whitespace-nowrap"
               >
-                <Zap className="w-3 h-3" /> 
-                <span>{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
-                <span className="text-[10px] font-bold uppercase bg-teal-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors">
+                <Zap className="w-3 h-3 shrink-0" /> 
+                <span className="whitespace-nowrap">{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                <span className="text-[10px] font-bold uppercase bg-teal-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors shrink-0">
                   +
                 </span>
               </button>
@@ -1327,6 +1328,64 @@ export default function App() {
                   </div>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Modal */}
+      {showEmergencyModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/90 backdrop-blur-md">
+          <div className="bg-slate-900 border border-red-500/50 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl overflow-hidden">
+            <div className="bg-red-500/10 p-6 border-b border-red-500/20">
+              <h2 className="text-2xl font-medium text-red-400 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-3" />
+                Besoin d'aide immédiate ?
+              </h2>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              <p className="text-slate-300 leading-relaxed">
+                Il semble que vous traversiez un moment extrêmement difficile. Votre sécurité et votre bien-être sont notre priorité absolue. 
+                <strong className="text-white block mt-2">Vous n'êtes pas seul(e) et de l'aide est disponible immédiatement, 24h/24 et 7j/7.</strong>
+              </p>
+
+              <div className="space-y-4">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h3 className="text-lg font-medium text-white mb-2">Numéros d'urgence (Gratuits)</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">Urgences Générales (Europe)</span>
+                      <a href="tel:112" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">112</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">SAMU (France)</span>
+                      <a href="tel:15" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">15</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">Prévention Suicide (France)</span>
+                      <a href="tel:3114" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">3114</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">SOS Amitié (France)</span>
+                      <a href="tel:0972394050" className="bg-slate-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors">09 72 39 40 50</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-400 italic">
+                S'il vous plaît, contactez l'un de ces services ou rendez-vous aux urgences les plus proches. Des professionnels sont là pour vous écouter sans jugement et vous aider à traverser cette épreuve.
+              </p>
+            </div>
+            
+            <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+              <button
+                onClick={() => setShowEmergencyModal(false)}
+                className="px-6 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                J'ai compris
+              </button>
             </div>
           </div>
         </div>
