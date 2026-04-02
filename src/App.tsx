@@ -4,10 +4,12 @@ import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { MindHeartLogo } from './components/MindHeartLogo';
 import { LandingPage } from './components/LandingPage';
+import { AudioVisualizer } from './components/AudioVisualizer';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
 import { jsPDF } from 'jspdf';
+import { motion } from 'framer-motion';
 
 interface SessionHistory {
   id: string;
@@ -30,7 +32,7 @@ export default function App() {
     return localStorage.getItem('marie_voice') || 'Zephyr';
   });
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-  const { isConnected, isSpeaking, isSaving, error, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, () => setShowEmergencyModal(true));
+  const { isConnected, isSpeaking, isSaving, error, analyserNode, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, () => setShowEmergencyModal(true));
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
@@ -463,9 +465,35 @@ export default function App() {
     <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans relative overflow-hidden">
       
       {/* Ambient glowing orbs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            x: [0, 100, -50, 0], 
+            y: [0, -50, 100, 0],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -100, 50, 0], 
+            y: [0, 100, -50, 0],
+            scale: [1, 1.2, 0.8, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, 50, -100, 0], 
+            y: [0, 50, -100, 0],
+            scale: [1, 0.9, 1.1, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
+        />
+      </div>
 
       {/* Sidebar / Auth Panel */}
       <div className="border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
@@ -777,6 +805,11 @@ export default function App() {
                 Temps restant : {formatTime(timeLeft)}
               </span>
             )}
+          </div>
+          
+          {/* Audio Visualizer */}
+          <div className="mt-4 w-full max-w-xs">
+            <AudioVisualizer analyserNode={analyserNode} isActive={isConnected && !isSpeaking} />
           </div>
         </div>
 

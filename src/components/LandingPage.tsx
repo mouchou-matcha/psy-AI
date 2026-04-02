@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Clock, Sparkles, ArrowRight, Building2, User, HeartPulse, TrendingDown, BookOpen } from 'lucide-react';
+import { ShieldCheck, Clock, Sparkles, ArrowRight, Building2, User, HeartPulse, TrendingDown, BookOpen, X, Send } from 'lucide-react';
 import { MindHeartLogo } from './MindHeartLogo';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -10,26 +11,78 @@ interface LandingPageProps {
 
 const b2bData = [
   {
-    name: 'Jours d\'arrêt maladie / an',
+    name: 'Absentéisme (jours/an)',
     'Sans accompagnement': 12,
-    'Avec accompagnement émotionnel': 4,
+    'Avec Marie': 4,
   },
   {
-    name: 'Baisse de productivité (%)',
+    name: 'Turnover (%)',
+    'Sans accompagnement': 15,
+    'Avec Marie': 5,
+  },
+  {
+    name: 'Baisse productivité (%)',
     'Sans accompagnement': 35,
-    'Avec accompagnement émotionnel': 10,
+    'Avec Marie': 10,
   },
 ];
 
 export function LandingPage({ onLogin, authError }: LandingPageProps) {
   const [view, setView] = useState<'b2c' | 'b2b'>('b2c');
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [formData, setFormData] = useState({
+    company: '',
+    employees: '',
+    email: '',
+    description: ''
+  });
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const subject = encodeURIComponent(`Demande B2B Marie AI - ${formData.company}`);
+    const body = encodeURIComponent(
+      `Entreprise: ${formData.company}\n` +
+      `Nombre d'employés: ${formData.employees}\n` +
+      `Email de contact: ${formData.email}\n\n` +
+      `Descriptif du besoin:\n${formData.description}`
+    );
+    window.location.href = `mailto:julyand36@gmail.com?subject=${subject}&body=${body}`;
+    setShowContactForm(false);
+    setFormData({ company: '', employees: '', email: '', description: '' });
+  };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 font-sans selection:bg-teal-500/30 relative overflow-hidden">
       {/* Ambient glowing orbs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/5 rounded-full blur-[150px] pointer-events-none"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            x: [0, 100, -50, 0], 
+            y: [0, -50, 100, 0],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -100, 50, 0], 
+            y: [0, 100, -50, 0],
+            scale: [1, 1.2, 0.8, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, 50, -100, 0], 
+            y: [0, 50, -100, 0],
+            scale: [1, 0.9, 1.1, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
+        />
+      </div>
 
       {/* Navigation */}
       <nav className="border-b border-slate-800/50 bg-slate-950/50 backdrop-blur-md fixed top-0 w-full z-50">
@@ -181,7 +234,7 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
                 L'accompagnement émotionnel proactif permet une baisse drastique des mises en arrêt maladie. L'esprit est intimement lié au corps : soulager la charge mentale, c'est prévenir les maladies physiques.
               </p>
               <button 
-                onClick={onLogin}
+                onClick={() => setShowContactForm(true)}
                 className="group flex items-center gap-2 text-base font-medium px-8 py-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-all hover:scale-105 active:scale-95"
               >
                 Protéger mes équipes
@@ -235,16 +288,27 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
                       data={b2bData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
+                      <defs>
+                        <linearGradient id="colorSans" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
+                        </linearGradient>
+                        <linearGradient id="colorAvec" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                       <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
                       <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
                       <Tooltip 
                         cursor={{ fill: '#27272a', opacity: 0.4 }}
                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#f4f4f5' }}
+                        itemStyle={{ color: '#f4f4f5' }}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                      <Bar dataKey="Sans accompagnement" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Avec accompagnement émotionnel" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Sans accompagnement" fill="url(#colorSans)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Avec Marie" fill="url(#colorAvec)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -259,6 +323,93 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
         <p>© {new Date().getFullYear()} Marie AI. Tous droits réservés.</p>
         <p className="mt-2">Ceci est un outil d'accompagnement et ne remplace pas un suivi médical ou psychiatrique en cas d'urgence.</p>
       </footer>
+      {/* Contact Form Modal */}
+      {showContactForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setShowContactForm(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <Building2 className="w-5 h-5 text-blue-400" />
+              </div>
+              <h2 className="text-xl font-semibold">Demande d'informations</h2>
+            </div>
+            
+            <p className="text-slate-400 text-sm mb-6">
+              Laissez-nous vos coordonnées et décrivez-nous vos besoins. Nous vous recontacterons rapidement pour vous proposer une solution adaptée.
+            </p>
+
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nom de l'entreprise</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.company}
+                  onChange={(e) => setFormData({...formData, company: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  placeholder="Ex: Acme Corp"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nombre d'employés</label>
+                <select 
+                  required
+                  value={formData.employees}
+                  onChange={(e) => setFormData({...formData, employees: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                >
+                  <option value="" disabled>Sélectionnez une taille</option>
+                  <option value="1-10">1 à 10 employés</option>
+                  <option value="11-50">11 à 50 employés</option>
+                  <option value="51-200">51 à 200 employés</option>
+                  <option value="201-500">201 à 500 employés</option>
+                  <option value="500+">Plus de 500 employés</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email de contact</label>
+                <input 
+                  type="email" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  placeholder="vous@entreprise.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Descriptif du besoin</label>
+                <textarea 
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows={4}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none"
+                  placeholder="Quels sont les défis actuels de vos équipes ?"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-xl transition-colors mt-6"
+              >
+                <Send className="w-4 h-4" />
+                Envoyer ma demande
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

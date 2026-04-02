@@ -110,6 +110,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const sessionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -121,6 +122,8 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
   const isPlayingRef = useRef(false);
   const nextPlayTimeRef = useRef(0);
   const activeSourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  const isIntentionalDisconnectRef = useRef(false);
 
   const playNextInQueue = useCallback(() => {
     if (!audioContextRef.current) return;
@@ -171,7 +174,8 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
     setIsSpeaking(false);
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (isReconnecting: boolean = false) => {
+    isIntentionalDisconnectRef.current = false;
     try {
       setError(null);
       
@@ -245,15 +249,30 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
           autoGainControl: true,
         },
       });
+      
+      if (isIntentionalDisconnectRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      
       streamRef.current = stream;
 
       // Load AudioWorklet
       const workletUrl = getAudioWorkletUrl();
       await ctx.audioWorklet.addModule(workletUrl);
       URL.revokeObjectURL(workletUrl);
+      
+      if (isIntentionalDisconnectRef.current) {
+        return;
+      }
 
       const source = ctx.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      setAnalyserNode(analyser);
 
       const workletNode = new AudioWorkletNode(ctx, 'pcm-processor');
       workletNodeRef.current = workletNode;
@@ -414,6 +433,10 @@ ${EMOTIONAL_ANALYSIS_INSTRUCTION}
 
 ${CLINICAL_SCENARIOS}`;
 
+      if (isIntentionalDisconnectRef.current) {
+        return;
+      }
+
       const sessionPromise = ai.live.connect({
         model: 'gemini-3.1-flash-live-preview',
         config: {
@@ -458,9 +481,17 @@ ${CLINICAL_SCENARIOS}`;
             sessionPromise.then((session) => {
               setTimeout(() => {
                 try {
-                  session.sendRealtimeInput({
-                    text: "La séance commence. Bonjour, je t'écoute."
-                  });
+                  if (isReconnecting) {
+                    const recentMessages = messagesRef.current.slice(-10);
+                    const recentContext = recentMessages.map(m => `${m.role}: ${m.text}`).join('\n');
+                    session.sendRealtimeInput({
+                      text: `[Système: La connexion a été brièvement interrompue. Voici le contexte récent de notre conversation juste avant la coupure :\n${recentContext}\nReprends la conversation naturellement là où nous en étions, sans mentionner la coupure.]`
+                    });
+                  } else {
+                    session.sendRealtimeInput({
+                      text: "La séance commence. Bonjour, je t'écoute."
+                    });
+                  }
                 } catch (e) {
                   console.error("Error sending initial prompt:", e);
                 }
@@ -578,9 +609,38 @@ ${CLINICAL_SCENARIOS}`;
             }
           },
           onclose: () => {
-            setIsConnected(false);
-            stopPlayback();
-            setMessages((prev) => [...prev, { role: 'system', text: 'Session terminée.' }]);
+            if (!isIntentionalDisconnectRef.current) {
+              console.log("Connection closed by server (timeout). Reconnecting...");
+              
+              // Clean up current session resources
+              if (sessionRef.current) {
+                sessionRef.current = null;
+              }
+              if (workletNodeRef.current) {
+                workletNodeRef.current.disconnect();
+                workletNodeRef.current = null;
+              }
+              if (sourceNodeRef.current) {
+                sourceNodeRef.current.disconnect();
+                sourceNodeRef.current = null;
+              }
+              if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+              }
+              if (audioContextRef.current) {
+                audioContextRef.current.close();
+                audioContextRef.current = null;
+              }
+              stopPlayback();
+              
+              // Reconnect
+              connect(true);
+            } else {
+              setIsConnected(false);
+              stopPlayback();
+              setMessages((prev) => [...prev, { role: 'system', text: 'Session terminée.' }]);
+            }
           },
           onerror: (err) => {
             console.error('Live API Error:', err);
@@ -609,6 +669,10 @@ ${CLINICAL_SCENARIOS}`;
   }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode]);
 
   const disconnect = useCallback(async () => {
+    isIntentionalDisconnectRef.current = true;
+    setIsConnected(false);
+    setAnalyserNode(null);
+
     if (sessionRef.current) {
       sessionRef.current.then((session: any) => session.close());
       sessionRef.current = null;
@@ -745,7 +809,6 @@ Transcription:\n${transcript}`,
     
     setMessages([]);
     messagesRef.current = [];
-    setIsConnected(false);
   }, [stopPlayback, user, history]);
 
   const interrupt = useCallback(() => {
@@ -758,6 +821,7 @@ Transcription:\n${transcript}`,
     isSaving,
     messages,
     error,
+    analyserNode,
     connect,
     disconnect,
     interrupt,
