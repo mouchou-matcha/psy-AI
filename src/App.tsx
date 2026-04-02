@@ -1669,29 +1669,6 @@ export default function App() {
                   </a>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-800/50">
-                <button 
-                  onClick={() => {
-                    // Dev simulation: Add 60 minutes (3600 seconds)
-                    if (user) {
-                      const newTime = (timeLeft !== null ? timeLeft : (userData?.availableTime || 0)) + 3600;
-                      availableTimeRef.current = newTime;
-                      setTimeLeft(newTime);
-                      setDoc(doc(db, 'users', user.uid), { 
-                        availableTime: newTime 
-                      }, { merge: true });
-                    }
-                    setIsCreditsPanelOpen(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 px-4 rounded-xl font-medium transition-colors text-sm"
-                >
-                  Simuler un paiement (Test +1h)
-                </button>
-                <p className="text-xs text-slate-600 mt-3">
-                  Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -1731,24 +1708,6 @@ export default function App() {
                   <Zap className="w-5 h-5" />
                   Acheter 30 minutes
                 </a>
-                
-                <button 
-                  onClick={() => {
-                    // Dev simulation: Add 30 minutes (1800 seconds)
-                    if (user) {
-                      const newTime = (timeLeft !== null ? timeLeft : (userData?.availableTime || 0)) + 1800;
-                      availableTimeRef.current = newTime;
-                      setTimeLeft(newTime);
-                      setDoc(doc(db, 'users', user.uid), { 
-                        availableTime: newTime 
-                      }, { merge: true });
-                    }
-                    setShowPaywall(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 px-4 rounded-xl font-medium transition-colors"
-                >
-                  Simuler un paiement (Test +30m)
-                </button>
 
                 <button 
                   onClick={() => setShowPaywall(false)}
@@ -1757,10 +1716,6 @@ export default function App() {
                   Fermer
                 </button>
               </div>
-              
-              <p className="text-xs text-slate-600">
-                Note technique : Le paiement réel via Stripe nécessite un webhook serveur pour créditer automatiquement votre compte. Utilisez le bouton "Simuler" pour tester la fonctionnalité.
-              </p>
             </div>
           </div>
         </div>
