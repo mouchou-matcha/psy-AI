@@ -547,6 +547,27 @@ export default function App() {
             </div>
 
             <div className="flex-1">
+              {/* Personnalité de l'IA Toggle */}
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setIsIncisiveMode(false)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Empathique</span>
+                  </button>
+                  <button
+                    onClick={() => setIsIncisiveMode(true)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Électrochoc</span>
+                  </button>
+                </div>
+              </div>
+
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Vos données</h3>
               <div className="space-y-2">
                 <button 
@@ -577,27 +598,6 @@ export default function App() {
                     <span className="text-sm text-slate-300 group-hover:text-slate-100">Plan Thérapeutique</span>
                   </div>
                 </button>
-              </div>
-
-              {/* Personnalité de l'IA Toggle */}
-              <div className="mt-6 pt-6 border-t border-slate-800/50">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setIsIncisiveMode(false)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
-                  >
-                    <Heart className="w-4 h-4" />
-                    <span className="text-sm font-medium">Psy Empathique</span>
-                  </button>
-                  <button
-                    onClick={() => setIsIncisiveMode(true)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span className="text-sm font-medium">Psy Électrochoc</span>
-                  </button>
-                </div>
               </div>
 
               {/* Bilan Inline Section */}
@@ -714,49 +714,6 @@ export default function App() {
               <p className="text-xs text-amber-500/80 bg-amber-500/10 py-2 px-4 rounded-full border border-amber-500/20 inline-block mt-4">
                 Connectez-vous pour commencer une séance et sauvegarder votre dossier.
               </p>
-            )}
-            {history.length > 0 && !hasStarted && (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4 md:hidden">
-                <button 
-                  onClick={() => setShowHistory(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
-                >
-                  <User className="w-4 h-4 mr-2 text-teal-500" />
-                  Historique ({history.length})
-                </button>
-                <button 
-                  onClick={() => setShowTree(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
-                >
-                  <Network className="w-4 h-4 mr-2 text-indigo-500" />
-                  Arbre Thérapeutique
-                </button>
-                <button 
-                  onClick={() => setShowPlan(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 transition-colors ring-1 ring-slate-800 text-xs text-slate-300"
-                >
-                  <ClipboardList className="w-4 h-4 mr-2 text-amber-500" />
-                  Plan
-                </button>
-              </div>
-            )}
-
-            {/* Mobile Bilan Inline Section */}
-            {history.length > 0 && !hasStarted && latestClinicalData?.recommended_therapy?.type && (
-              <div className="md:hidden mt-6 w-full max-w-xs mx-auto">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 text-center">Type de professionnel conseillé</h3>
-                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Compass className="w-4 h-4 text-indigo-400" />
-                    <span className="text-sm font-bold text-indigo-300">
-                      {latestClinicalData.recommended_therapy.type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
-                    {latestClinicalData.recommended_therapy.reason}
-                  </p>
-                </div>
-              </div>
             )}
           </div>
 
