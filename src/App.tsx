@@ -73,9 +73,9 @@ export default function App() {
             if (!data.hasConsented) {
               setShowConsentModal(true);
             }
-            // Initialize availableTime if it doesn't exist (10 minutes = 600 seconds)
+            // Initialize availableTime if it doesn't exist (5 minutes = 300 seconds)
             if (data.availableTime === undefined) {
-              setDoc(doc(db, 'users', user.uid), { availableTime: 600 }, { merge: true });
+              setDoc(doc(db, 'users', user.uid), { availableTime: 300 }, { merge: true });
             }
           } else {
             setShowConsentModal(true);
@@ -146,7 +146,7 @@ export default function App() {
         await setDoc(docRef, {
           hasConsented: true,
           consentedAt: new Date().toISOString(),
-          availableTime: existingData.availableTime !== undefined ? existingData.availableTime : 600
+          availableTime: existingData.availableTime !== undefined ? existingData.availableTime : 300
         }, { merge: true });
         setShowConsentModal(false);
       } catch (err) {
@@ -1643,7 +1643,7 @@ export default function App() {
               <div className="space-y-2">
                 <h2 className="text-2xl font-medium text-slate-100">Temps écoulé</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  Votre crédit de temps gratuit (10 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
+                  Votre crédit de temps gratuit (5 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
                 </p>
               </div>
 
