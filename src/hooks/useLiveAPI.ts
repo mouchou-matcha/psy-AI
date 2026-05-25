@@ -103,7 +103,7 @@ export async function previewVoice(voiceName: string): Promise<void> {
   }
 }
 
-export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr', onEmergency?: () => void) {
+export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr', language: string = 'fr', onEmergency?: () => void) {
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const messagesRef = useRef<{ role: string; text: string }[]>([]);
@@ -286,7 +286,17 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
 
       const isFirstSession = !history || history.length === 0;
 
-      const systemInstruction = `Tu es une IA jouant le rôle d’un psychologue non médical et d’un coach émotionnel.
+      const languageMap: Record<string, string> = {
+        'fr': 'Français',
+        'en': 'Anglais (English)',
+        'de': 'Allemand (Deutsch)',
+        'es': 'Espagnol (Español)'
+      };
+      const langName = languageMap[language] || 'Français';
+
+      const systemInstruction = `[CRITIQUE : TU DOIS IMPÉRATIVEMENT PARLER, ÉCOUTER ET RÉPONDRE EXCLUSIVEMENT EN ${langName.toUpperCase()}. TOUTE LA CONVERSATION DOIT SE DÉROULER DANS CETTE LANGUE.]
+
+Tu es une IA jouant le rôle d’un psychologue non médical et d’un coach émotionnel.
 Ton objectif est d’aider l’utilisateur à :
 - clarifier ce qu’il vit et ce qu’il ressent,
 - comprendre ses schémas de comportement et leurs causes racines,
@@ -671,7 +681,7 @@ ${CLINICAL_SCENARIOS}`;
       }
       setIsConnected(false);
     }
-  }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode]);
+  }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode, voiceName, language]);
 
   const disconnect = useCallback(async () => {
     isIntentionalDisconnectRef.current = true;

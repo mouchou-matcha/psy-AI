@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play, Info } from 'lucide-react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play, Info, Globe } from 'lucide-react';
 import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
 import { MindHeartLogo } from './components/MindHeartLogo';
@@ -31,8 +31,11 @@ export default function App() {
   const [voiceName, setVoiceName] = useState<string>(() => {
     return localStorage.getItem('marie_voice') || 'Zephyr';
   });
+  const [language, setLanguage] = useState<string>(() => {
+    return localStorage.getItem('marie_language') || 'fr';
+  });
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-  const { isConnected, isSpeaking, isSaving, error, analyserNode, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, () => setShowEmergencyModal(true));
+  const { isConnected, isSpeaking, isSaving, error, analyserNode, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, language, () => setShowEmergencyModal(true));
   const [hasStarted, setHasStarted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
@@ -1232,6 +1235,47 @@ export default function App() {
             <div className="p-6 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Préférences</h3>
+
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-slate-200">Langue parlée</p>
+                      <p className="text-xs text-slate-500">Choisissez la langue de l'IA.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {[
+                      { code: 'fr', flagCode: 'fr', label: 'Français' },
+                      { code: 'en', flagCode: 'gb', label: 'English' },
+                      { code: 'de', flagCode: 'de', label: 'Deutsch' },
+                      { code: 'es', flagCode: 'es', label: 'Español' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          localStorage.setItem('marie_language', lang.code);
+                        }}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-transform hover:scale-105 border-2 overflow-hidden ${
+                          language === lang.code 
+                            ? 'border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)]' 
+                            : 'border-slate-700 bg-slate-900 opacity-70 hover:opacity-100 hover:border-slate-500'
+                        }`}
+                        title={lang.label}
+                      >
+                        <img 
+                          src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
+                          srcSet={`https://flagcdn.com/w80/${lang.flagCode}.png 2x`}
+                          width="40" 
+                          alt={lang.label}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 
                 <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
                   <div className="flex items-center gap-3">
