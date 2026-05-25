@@ -53,6 +53,7 @@ export default function App() {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isCreditsPanelOpen, setIsCreditsPanelOpen] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
@@ -377,7 +378,8 @@ export default function App() {
           setTimeLeft(current);
 
           if (current <= 0) {
-            disconnect();
+            disconnect(true);
+            setIsPaused(true);
             setShowPaywall(true);
           }
 
@@ -396,6 +398,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isConnected, disconnect, user]);
 
+  useEffect(() => {
+    // Resume session automatically if paused and user bought credits
+    if (isPaused && hasStarted && !isConnected && userData?.availableTime && userData.availableTime > 0) {
+      setIsPaused(false);
+      setShowPaywall(false);
+      connect(true);
+    }
+  }, [userData?.availableTime, isPaused, hasStarted, isConnected, connect]);
+
   const formatTime = (seconds: number) => {
     const validSeconds = Math.max(0, seconds);
     const m = Math.floor(validSeconds / 60).toString().padStart(2, '0');
@@ -405,8 +416,10 @@ export default function App() {
 
   // Handle start/stop
   const toggleSession = async () => {
-    if (isConnected) {
-      await disconnect();
+    if (isConnected || isPaused) {
+      await disconnect(false);
+      setIsPaused(false);
+      setHasStarted(false);
     } else {
       if (userData?.availableTime !== undefined && userData.availableTime <= 0) {
         setShowPaywall(true);
@@ -1711,10 +1724,15 @@ export default function App() {
                 </a>
 
                 <button 
-                  onClick={() => setShowPaywall(false)}
+                  onClick={() => {
+                    disconnect(false);
+                    setIsPaused(false);
+                    setHasStarted(false);
+                    setShowPaywall(false);
+                  }}
                   className="w-full py-3 px-4 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
                 >
-                  Fermer
+                  Fermer et terminer la séance
                 </button>
               </div>
             </div>

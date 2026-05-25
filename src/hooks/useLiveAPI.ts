@@ -683,7 +683,7 @@ ${CLINICAL_SCENARIOS}`;
     }
   }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode, voiceName, language]);
 
-  const disconnect = useCallback(async () => {
+  const disconnect = useCallback(async (isPause: boolean = false) => {
     isIntentionalDisconnectRef.current = true;
     setIsConnected(false);
     setAnalyserNode(null);
@@ -712,7 +712,7 @@ ${CLINICAL_SCENARIOS}`;
 
     const hasUserSpoken = messagesRef.current.some(m => m.role === 'user');
 
-    if (hasUserSpoken && user) {
+    if (!isPause && hasUserSpoken && user) {
       setIsSaving(true);
       try {
         const transcript = messagesRef.current.map(m => `${m.role}: ${m.text}`).join('\n');
@@ -822,8 +822,10 @@ Transcription:\n${transcript}`,
       }
     }
     
-    setMessages([]);
-    messagesRef.current = [];
+    if (!isPause) {
+      setMessages([]);
+      messagesRef.current = [];
+    }
   }, [stopPlayback, user, history]);
 
   const interrupt = useCallback(() => {
