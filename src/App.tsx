@@ -21,42 +21,63 @@ interface SessionHistory {
   therapeutic_plan: string;
 }
 
+/**
+ * Main Application Component
+ * Manages the core UI layout, authentication state, Firebase data synchronization,
+ * and interactions with the Gemini Live API session.
+ */
 export default function App() {
+  // ==========================================
+  // 1. AUTHENTICATION & USER STATE
+  // ==========================================
   const [user, setUser] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [isIncisiveMode, setIsIncisiveMode] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
+  // ==========================================
+  // 2. SESSION & API STATE
+  // ==========================================
+  const [isIncisiveMode, setIsIncisiveMode] = useState(false);
   const [history, setHistory] = useState<SessionHistory[]>([]);
-  const [voiceName, setVoiceName] = useState<string>(() => {
-    return localStorage.getItem('marie_voice') || 'Zephyr';
-  });
-  const [language, setLanguage] = useState<string>(() => {
-    return localStorage.getItem('marie_language') || 'fr';
-  });
-  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('marie_voice') || 'Zephyr');
+  const [language, setLanguage] = useState<string>(() => localStorage.getItem('marie_language') || 'fr');
+  
+  // Custom hook wrapping the WebSocket/WebRTC connection to Gemini API
   const { isConnected, isSpeaking, isSaving, error, analyserNode, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, language, () => setShowEmergencyModal(true));
+  
   const [hasStarted, setHasStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // ==========================================
+  // 3. UI VISIBILITY & MODALS STATE
+  // ==========================================
   const [showHistory, setShowHistory] = useState(false);
   const [showTree, setShowTree] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isCreditsPanelOpen, setIsCreditsPanelOpen] = useState(false);
+
+  // ==========================================
+  // 4. MISC. INTERACTIONS STATE
+  // ==========================================
   const [consentTOS, setConsentTOS] = useState(false);
   const [consentHealthData, setConsentHealthData] = useState(false);
   const [expandedTOS, setExpandedTOS] = useState(false);
   const [expandedHealth, setExpandedHealth] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isCreditsPanelOpen, setIsCreditsPanelOpen] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
 
+  // ==========================================
+  // EFFECTS: AUTH & FIREBASE LISTENERS
+  // ==========================================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -121,6 +142,13 @@ export default function App() {
     }
   }, [isAuthReady, user, isSaving]);
 
+  // ==========================================
+  // EVENT HANDLERS
+  // ==========================================
+
+  /**
+   * Initiates Google OAuth login via Firebase.
+   */
   const handleGoogleLogin = async () => {
     setAuthError('');
     try {
@@ -131,6 +159,9 @@ export default function App() {
     }
   };
 
+  /**
+   * Logs out the user and clears local session history.
+   */
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -140,6 +171,10 @@ export default function App() {
     }
   };
 
+  /**
+   * Saves the user's consent to the TOS and Health Data policies to Firestore,
+   * initializing their available time if they are a new user.
+   */
   const handleConsentSubmit = async () => {
     if (user && consentTOS && consentHealthData) {
       try {
@@ -159,6 +194,9 @@ export default function App() {
     }
   };
 
+  /**
+   * Progressively deletes all patient history data, user data document, and the Firebase Auth user entirely.
+   */
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeletingAccount(true);
@@ -185,6 +223,9 @@ export default function App() {
     }
   };
 
+  /**
+   * Generates and downloads a JSON file containing the user's patient history.
+   */
   const handleDownloadData = () => {
     const dataStr = JSON.stringify(history, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -198,6 +239,9 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Triggers a preview of the selected voice using the Gemini TTS API.
+   */
   const handlePreviewVoice = async () => {
     if (isPreviewing) return;
     setIsPreviewing(true);
@@ -211,10 +255,17 @@ export default function App() {
     }
   };
 
+  /**
+   * Stages a specific session ID to be deleted, prompting a confirmation modal.
+   * @param sessionId The ID of the session to delete
+   */
   const handleDeleteSession = async (sessionId: string) => {
     setSessionToDelete(sessionId);
   };
 
+  /**
+   * Confirms and executes the deletion of the staged session document from Firestore.
+   */
   const confirmDeleteSession = async () => {
     if (sessionToDelete) {
       try {
@@ -407,6 +458,9 @@ export default function App() {
     }
   }, [userData?.availableTime, isPaused, hasStarted, isConnected, connect]);
 
+  /**
+   * Formats a given number of seconds into an "MM:SS min" string.
+   */
   const formatTime = (seconds: number) => {
     const validSeconds = Math.max(0, seconds);
     const m = Math.floor(validSeconds / 60).toString().padStart(2, '0');
@@ -414,7 +468,10 @@ export default function App() {
     return `${m}:${s} min`;
   };
 
-  // Handle start/stop
+  /**
+   * Toggles the active status of the API session.
+   * If connected or paused, it disconnects. Otherwise, it checks for available credits and starts.
+   */
   const toggleSession = async () => {
     if (isConnected || isPaused) {
       await disconnect(false);
@@ -430,6 +487,11 @@ export default function App() {
     }
   };
 
+  /**
+   * Parses JSON string for psychological insights.
+   * @param insightsStr JSON representation of insights
+   * @returns Array of insights, or an empty array on failure
+   */
   const parseInsights = (insightsStr: string) => {
     try {
       const parsed = JSON.parse(insightsStr);
@@ -439,6 +501,11 @@ export default function App() {
     }
   };
 
+  /**
+   * Parses JSON string for the Therapy Tree nodes and links.
+   * @param treeDataStr JSON representation of therapy tree data
+   * @returns Structured object containing `nodes` and `links` arrays
+   */
   const parseTreeData = (treeDataStr: string) => {
     try {
       const parsed = JSON.parse(treeDataStr);
@@ -448,6 +515,11 @@ export default function App() {
     }
   };
 
+  /**
+   * Parses JSON string for structured clinical diagnostic data.
+   * @param dataStr JSON representation of clinical data
+   * @returns Structured clinical data object, or empty object on failure
+   */
   const parseClinicalData = (dataStr: string) => {
     try {
       return JSON.parse(dataStr) || {};
@@ -456,6 +528,11 @@ export default function App() {
     }
   };
 
+  /**
+   * Parses JSON string for the suggested therapeutic plan.
+   * @param planStr JSON representation of the therapeutic plan
+   * @returns Structured plan definition, or null on failure
+   */
   const parsePlanData = (planStr: string) => {
     try {
       return JSON.parse(planStr) || null;
