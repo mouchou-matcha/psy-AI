@@ -1,0 +1,3847 @@
+// ==========================================
+// Fichier : FLUTTERFLOW_UI_UX_SPEC.md
+// ==========================================
+# DOCUMENTATION UI/UX POUR FLUTTERFLOW
+Cette documentation décrit en détail l'interface utilisateur (UI), l'expérience utilisateur (UX), les couleurs, la typographie et la logique d'interaction de l'application "Marie". 
+Utilisez ces spécifications pour recréer exactement la même application dans FlutterFlow.
+
+## 1. THÈME ET STYLES GLOBAUX (DESIGN SYSTEM)
+
+### Couleurs Principales (Palette)
+- **Background Principal :** Slate 950 (Hex: `#020617`) - Un noir bleuté profond.
+- **Background Secondaire (Cartes, Modales) :** Slate 900 (`#0f172a`) avec une opacité de 40% à 80% + effet Blur (Backdrop Blur).
+- **Couleur d'Accentuation Primaire :** Teal 500 (`#14b8a6`) - Utilisé pour les boutons d'action principale, les états actifs, et le logo.
+- **Couleur d'Accentuation Secondaire :** Teal 400 (`#2dd4bf`) - Pour les textes mis en évidence et les survols (hover).
+- **Texte Principal :** Slate 100 (`#f1f5f9`) - Blanc cassé pour une lecture agréable sur fond sombre.
+- **Texte Secondaire :** Slate 400 (`#94a3b8`) - Gris bleuté pour les sous-titres, dates, descriptions.
+- **Couleur d'Erreur / Urgence :** Red 500 (`#ef4444`) - Utilisé pour le bouton d'urgence et les messages d'erreur.
+- **Bordures :** Slate 800 (`#1e293b`) ou Teal 500 avec faible opacité (`border-teal-500/30`).
+
+### Typographie
+- **Police (Font Family) :** Inter ou Roboto (sans-serif moderne, propre et lisible).
+- **Tailles :**
+  - Titres Modales/Pages : 24px (text-2xl) à 30px, Font Weight: 500 ou 600.
+  - Sous-titres : 14px (text-sm) à 16px, Font Weight: 500, souvent en majuscules avec un espacement entre les lettres (tracking-wider).
+  - Corps de texte : 14px (text-sm) à 16px, texte fluide et aéré (leading-relaxed).
+  - Petit texte : 12px (text-xs) pour les légendes ou temps restant.
+
+### Effets et Ombres
+- **Glassmorphism :** Presque toutes les modales et cartes utilisent un fond semi-transparent (ex: `rgba(15, 23, 42, 0.4)`) avec un filtre de flou d'arrière-plan (Backdrop Blur : 8px ou 12px) et une fine bordure.
+- **Glow (Lueur) :** Le bouton principal du micro et le logo ont une lueur (Box Shadow douce) de couleur Teal (`box-shadow: 0 0 20px rgba(20, 184, 166, 0.3)`).
+- **Bordures arrondies :** Les boutons et modales utilisent un `Border Radius` de 16px (rounded-2xl) ou de 12px (rounded-xl) - design très doux, style iOS.
+
+---
+
+## 2. STRUCTURE DES PAGES (WIDGET TREE FLUTTERFLOW)
+
+### A. Écran de Connexion (Landing Page)
+- **Layout :** Stack. En fond, un container `Slate 950` plein écran avec des reflets radiaux colorés floutés animés en CSS (billes translucides).
+- **Contenu Centré (Column alignée au centre) :**
+  - Titre principal : Text "Marie" (36px, Slate-100, SemiBold).
+  - Sous-titre : Text "VOTRE ESPACE DE THÉRAPIE VOCALE" (12px, Teal-500, uppercase, espacé).
+  - Liste d'avantages : 3 Rows animées (fade-in) avec icône (Micro, Sparkles, Shield) + Texte explicatif.
+  - Bouton Google : Container blanc avec logo Google + "Continuer avec Google".
+
+### B. Écran Principal de l'Application (Console Vocale)
+- **Layout Global :** SafeArea avec une colonne principale prenant toute la hauteur (MainAxisAlignment.spaceBetween).
+- **Top Bar (Row) :**
+  - Gauche : Bouton "Temps restant" (`Container` arrondi avec icône Horloge + texte "05:00 min"). Au clic -> ouvre un panel d'achat (Bottom Sheet / Modal).
+  - Droite : Deux icônes cliquables (IconButton). Une pour les "Paramètres" (Roue crantée) et une pour "Déconnexion" (Flèche de sortie).
+- **Centre (Column centrée) :**
+  - Widget personnalisé : Logo "MindHeart" en SVG (représentation d'un cœur et cerveau fusionnés qui pulse). Dans FlutterFlow, utilisez un composant Lottie ou une image SVG avec composant Animation.
+  - Widget Visualiseur Audio : Des barres verticales (ondes sonores) qui bougent lorsque l'utilisateur ou l'IA parle. (Dans FlutterFlow, vous pouvez utiliser un Lottie par défaut d'onde sonore qui s'active en fonction de l'état).
+  - Status Text : "Marie vous écoute..." ou "Configuration du flux..." selon l'état de connexion de l'API.
+- **Bottom Bar (Zone d'Action - Stack/Row) :**
+  - Bouton principal au centre : Gros bouton circulaire (FloatingActionButton / Container rond 80x80) avec icône Microphone.
+    - État Off : Gris/Teal très sombre, icône transparente.
+    - État Actif (Enregistrement) : Remplissage Rouge, icône de stop/pause, effet de lueur pulsante.
+  - Boutons secondaires autour du bouton central :
+    - Gauche : Bouton "Historique" (icône Liste/Dossier).
+    - Droite : Bouton "Mode Incisif" (icône Éclair, toggle On/Off) et Bouton "Urgence" (icône Triangle rouge).
+
+### C. Modales & Popups (Composants Dialog / Bottom Sheet)
+
+**1. Modales Paramètres (Settings)**
+- **Type :** AlertDialog ou Bottom Sheet centrée. Fond Glassmorphism.
+- **Contenu :**
+  - Sélection de langue (Row avec 4 boutons carrés [40x40], images des drapeaux de la France, UK, Allemagne, Espagne). Le bouton actif a une bordure Teal 500 et un léger "scale/zoom".
+  - Sélection de voix (Dropdown / Sélecteur avec Zephyr, Kore, etc.) et un bouton "Play" pour prévisualiser.
+  - Boutons d'export (Télécharger données JSON) et bouton RGPD Politique de vie privée.
+
+**2. Modale "Temps Écoulé" (Paywall)**
+- **Déclencheur :** Quand le minuteur global tombe à 00:00 (Fin des 5 min).
+- **UX :** L'utilisateur NE PEUT PAS quitter cette popup sans recharger (ou fermer la session).
+- **Design :**
+  - Icône Horloge au centre.
+  - Titre : "Temps écoulé".
+  - Cartes de prix (Column de Rows). Ex: "Forfait 1 heure - 20€" (Carte mise en avant avec bordure Teal), "Forfait 30 minutes - 10€".
+  - Au clic sur un de ces forfaits : Lance une Action URL (Stripe Checkout). Une fois que Firebase se met à jour, la modale disparait et la séance reprend.
+  
+**3. Modale Historique des Séances (Drawer ou Dialog Large)**
+- **Layout :** Panneau latéral droit ou grande modale plein écran scrollable.
+- **Contenu :**
+  - Titre "Historique de vos séances".
+  - ListView (Liste des séances passées, triées par date décroissante).
+  - **Item de liste (Accordion / Expandable) :** 
+    - Header de l'item : Date formatée + Résumé très court généré par une IA.
+    - Contenu déroulé : Texte riche détaillant les "Insights" (pistes de réflexion), le "Therapeutic plan" (Plan d'action), et les "Clinical Data" (Schémas cognitifs).
+    - Bouton supprimer (icône poubelle rouge) pour effacer la séance.
+
+---
+
+## 3. LOGIQUE D'ÉTAT (APP STATE & FIREBASE)
+Pour que FlutterFlow reproduise ce comportement :
+
+- **Base de données Firebase :**
+  - Collection `users` : Document `uid` avec champ `availableTime` (Integer, secondes, ex: `300` pour 5 min).
+  - Collection `patient_history` : Enregistrement de chaque fin de séance (id, userId, date, summary, insights, etc.).
+- **Minuteur Global (Periodic Action / Timer Widget) :**
+  - Un timer décrémente `availableTime` toutes les secondes LORSQUE la séance vocale (isConnected) est active. 
+  - Si timer <= 0, déclenche `Action: Pause Session` et `Action: Show Bottom Sheet (Paywall)`.
+- **WebSocket / Live Audio :** L'interface repose sur Gemini Live API. Dans FlutterFlow, cela nécessitera probablement un composant personnalisé (Custom Widget ou Custom Action en Dart) pour gérer le straming audio entrant et sortant via WebSocket.
+
+## 4. ANIMATIONS À INTÉGRER DANS FLUTTERFLOW
+- **Animation de démarrage (On Page Load) :** Apparition progressive (Fade / Slide Up) des éléments de la page de login et de l'interface principale. Offset Y: 20px, Duration: 500ms.
+- **Écran d'attente vocal :** Lorsque l'utilisateur parle, l'opacité et l'échelle (scale) de l'audio-visualiseur changent en boucle.
+- **Transition bouton micro :** Le passage de Mic-Off à Mic-On modifie la taille du bouton de 1.1x et change la couleur en ~300ms de manière fluide.
+
+
+// ==========================================
+// Fichier : src/App.tsx
+// ==========================================
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play, Info, Globe } from 'lucide-react';
+import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
+import { TherapyTree } from './components/TherapyTree';
+import { MindHeartLogo } from './components/MindHeartLogo';
+import { LandingPage } from './components/LandingPage';
+import { AudioVisualizer } from './components/AudioVisualizer';
+import { auth, db } from './firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
+import { jsPDF } from 'jspdf';
+import { motion } from 'framer-motion';
+
+interface SessionHistory {
+  id: string;
+  date: string;
+  summary: string;
+  insights: string;
+  tree_data: string;
+  clinical_data: string;
+  therapeutic_plan: string;
+}
+
+/**
+ * Main Application Component
+ * Manages the core UI layout, authentication state, Firebase data synchronization,
+ * and interactions with the Gemini Live API session.
+ */
+export default function App() {
+  // ==========================================
+  // 1. AUTHENTICATION & USER STATE
+  // ==========================================
+  const [user, setUser] = useState<any>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [userData, setUserData] = useState<any>(null);
+
+  // ==========================================
+  // 2. SESSION & API STATE
+  // ==========================================
+  const [isIncisiveMode, setIsIncisiveMode] = useState(false);
+  const [history, setHistory] = useState<SessionHistory[]>([]);
+  const [voiceName, setVoiceName] = useState<string>(() => localStorage.getItem('marie_voice') || 'Zephyr');
+  const [language, setLanguage] = useState<string>(() => localStorage.getItem('marie_language') || 'fr');
+  
+  // Custom hook wrapping the WebSocket/WebRTC connection to Gemini API
+  const { isConnected, isSpeaking, isSaving, error, analyserNode, connect, disconnect, interrupt } = useLiveAPI(user, history, isIncisiveMode, voiceName, language, () => setShowEmergencyModal(true));
+  
+  const [hasStarted, setHasStarted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // ==========================================
+  // 3. UI VISIBILITY & MODALS STATE
+  // ==========================================
+  const [showHistory, setShowHistory] = useState(false);
+  const [showTree, setShowTree] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isCreditsPanelOpen, setIsCreditsPanelOpen] = useState(false);
+
+  // ==========================================
+  // 4. MISC. INTERACTIONS STATE
+  // ==========================================
+  const [consentTOS, setConsentTOS] = useState(false);
+  const [consentHealthData, setConsentHealthData] = useState(false);
+  const [expandedTOS, setExpandedTOS] = useState(false);
+  const [expandedHealth, setExpandedHealth] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+
+  // ==========================================
+  // EFFECTS: AUTH & FIREBASE LISTENERS
+  // ==========================================
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let unsubscribeUser: () => void;
+    
+    const checkConsentAndData = async () => {
+      if (user) {
+        unsubscribeUser = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserData(data);
+            if (!data.hasConsented) {
+              setShowConsentModal(true);
+            }
+            // Initialize availableTime if it doesn't exist (5 minutes = 300 seconds)
+            if (data.availableTime === undefined) {
+              setDoc(doc(db, 'users', user.uid), { availableTime: 300 }, { merge: true });
+            }
+          } else {
+            setShowConsentModal(true);
+          }
+        }, (err) => {
+          console.error("Error fetching user data:", err);
+        });
+      }
+    };
+    
+    if (isAuthReady) {
+      checkConsentAndData();
+    }
+    
+    return () => {
+      if (unsubscribeUser) unsubscribeUser();
+    };
+  }, [user, isAuthReady]);
+
+  useEffect(() => {
+    if (isAuthReady && user) {
+      const q = query(
+        collection(db, 'patient_history'),
+        where('userId', '==', user.uid),
+        orderBy('date', 'asc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const historyData: SessionHistory[] = [];
+        snapshot.forEach((doc) => {
+          historyData.push({ id: doc.id, ...doc.data() } as SessionHistory);
+        });
+        setHistory(historyData);
+      }, (err) => {
+        console.error("Firestore Error: ", err);
+      });
+      return () => unsubscribe();
+    } else {
+      setHistory([]);
+    }
+  }, [isAuthReady, user, isSaving]);
+
+  // ==========================================
+  // EVENT HANDLERS
+  // ==========================================
+
+  /**
+   * Initiates Google OAuth login via Firebase.
+   */
+  const handleGoogleLogin = async () => {
+    setAuthError('');
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  /**
+   * Logs out the user and clears local session history.
+   */
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setHistory([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /**
+   * Saves the user's consent to the TOS and Health Data policies to Firestore,
+   * initializing their available time if they are a new user.
+   */
+  const handleConsentSubmit = async () => {
+    if (user && consentTOS && consentHealthData) {
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        const existingData = docSnap.exists() ? docSnap.data() : {};
+        
+        await setDoc(docRef, {
+          hasConsented: true,
+          consentedAt: new Date().toISOString(),
+          availableTime: existingData.availableTime !== undefined ? existingData.availableTime : 300
+        }, { merge: true });
+        setShowConsentModal(false);
+      } catch (err) {
+        console.error("Error saving consent:", err);
+      }
+    }
+  };
+
+  /**
+   * Progressively deletes all patient history data, user data document, and the Firebase Auth user entirely.
+   */
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeletingAccount(true);
+    try {
+      // Delete all patient history
+      const q = query(collection(db, 'patient_history'), where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
+      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Delete user doc
+      await deleteDoc(doc(db, 'users', user.uid));
+
+      // Delete auth user
+      await deleteUser(user);
+      
+      setHistory([]);
+      setShowSettings(false);
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      alert("Une erreur est survenue lors de la suppression de votre compte. Veuillez vous reconnecter et réessayer.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  /**
+   * Generates and downloads a JSON file containing the user's patient history.
+   */
+  const handleDownloadData = () => {
+    const dataStr = JSON.stringify(history, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `marie_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Triggers a preview of the selected voice using the Gemini TTS API.
+   */
+  const handlePreviewVoice = async () => {
+    if (isPreviewing) return;
+    setIsPreviewing(true);
+    try {
+      await previewVoice(voiceName);
+    } catch (err) {
+      console.error("Error previewing voice:", err);
+      alert("Impossible de lire l'aperçu vocal pour le moment.");
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  /**
+   * Stages a specific session ID to be deleted, prompting a confirmation modal.
+   * @param sessionId The ID of the session to delete
+   */
+  const handleDeleteSession = async (sessionId: string) => {
+    setSessionToDelete(sessionId);
+  };
+
+  /**
+   * Confirms and executes the deletion of the staged session document from Firestore.
+   */
+  const confirmDeleteSession = async () => {
+    if (sessionToDelete) {
+      try {
+        await deleteDoc(doc(db, 'patient_history', sessionToDelete));
+      } catch (err) {
+        console.error("Erreur lors de la suppression de la séance:", err);
+      } finally {
+        setSessionToDelete(null);
+      }
+    }
+  };
+
+  const handleDownloadPDF = (clinicalData: any, sessionDate: string, sessionId: string, summary: string, insights: string[]) => {
+    const doc = new jsPDF();
+    
+    const formattedDate = new Date(sessionDate).toLocaleDateString('fr-FR', { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    let cursorY = margin;
+
+    // --- Header Design ---
+    // Top colored bar
+    doc.setFillColor(16, 185, 129); // teal-500
+    doc.rect(0, 0, pageWidth, 6, 'F');
+    
+    // Light background for header area
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.rect(0, 6, pageWidth, 34, 'F');
+
+    cursorY = 22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text("Dossier Clinique", margin, cursorY);
+    
+    cursorY += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Séance du ${formattedDate}`, margin, cursorY);
+
+    // Separator line
+    cursorY += 10;
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.setLineWidth(0.5);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    
+    cursorY += 12;
+
+    const addSection = (title: string, content: string | string[]) => {
+      if (!content || (Array.isArray(content) && content.length === 0)) return;
+
+      // Check if we need a new page for the title
+      if (cursorY > pageHeight - 30) {
+        doc.addPage();
+        cursorY = margin + 10;
+      }
+      
+      // Section Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.text(title.toUpperCase(), margin, cursorY);
+      
+      // Small accent line under title
+      doc.setDrawColor(16, 185, 129); // teal-500
+      doc.setLineWidth(0.5);
+      doc.line(margin, cursorY + 2, margin + 15, cursorY + 2);
+      
+      cursorY += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(51, 65, 85); // slate-700
+      const lineHeight = 5;
+
+      if (Array.isArray(content)) {
+        content.forEach(item => {
+          const splitLine = doc.splitTextToSize(`•  ${item}`, pageWidth - 2 * margin - 4);
+          if (cursorY + (splitLine.length * lineHeight) > pageHeight - margin) {
+            doc.addPage();
+            cursorY = margin + 10;
+          }
+          doc.text(splitLine, margin + 4, cursorY);
+          cursorY += splitLine.length * lineHeight + 2;
+        });
+      } else {
+        const textLines = doc.splitTextToSize(content, pageWidth - 2 * margin);
+        if (cursorY + (textLines.length * lineHeight) > pageHeight - margin) {
+          doc.addPage();
+          cursorY = margin + 10;
+        }
+        doc.text(textLines, margin, cursorY);
+        cursorY += textLines.length * lineHeight + 2;
+      }
+      cursorY += 8;
+    };
+
+    if (summary) addSection("Résumé de la séance", summary);
+    if (insights && insights.length > 0) addSection("Prises de conscience (Insights)", insights);
+    if (clinicalData.emotional_state) addSection("État émotionnel", clinicalData.emotional_state);
+    if (clinicalData.symptoms && clinicalData.symptoms.length > 0) addSection("Symptômes", clinicalData.symptoms);
+    if (clinicalData.triggers && clinicalData.triggers.length > 0) addSection("Déclencheurs", clinicalData.triggers);
+    if (clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0) addSection("Mécanismes de défense", clinicalData.defense_mechanisms);
+    if (clinicalData.risk_assessment) addSection("Évaluation des risques", clinicalData.risk_assessment);
+    
+    if (clinicalData.recommended_therapy?.type) {
+      addSection("Recommandation thérapeutique", [
+        `Type : ${clinicalData.recommended_therapy.type}`,
+        `Raison : ${clinicalData.recommended_therapy.reason}`
+      ]);
+    }
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); // slate-400
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(`Page ${i} sur ${pageCount} - Généré de manière sécurisée par Marie`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    }
+
+    doc.save(`Dossier_Clinique_${sessionDate.split('T')[0]}.pdf`);
+    
+    setCopiedSessionId(sessionId);
+    setTimeout(() => setCopiedSessionId(null), 2000);
+  };
+
+  useEffect(() => {
+    if (!isConnected && !isSaving) {
+      setHasStarted(false);
+    }
+  }, [isConnected, isSaving]);
+
+  // Timer based on available time
+  const availableTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (userData?.availableTime !== undefined) {
+      availableTimeRef.current = userData.availableTime;
+      if (!isConnected) {
+        setTimeLeft(userData.availableTime);
+      }
+    }
+  }, [userData?.availableTime, isConnected]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
+      interval = setInterval(() => {
+        if (availableTimeRef.current !== null) {
+          availableTimeRef.current -= 1;
+          const current = availableTimeRef.current;
+          
+          setTimeLeft(current);
+
+          if (current <= 0) {
+            disconnect(true);
+            setIsPaused(true);
+            setShowPaywall(true);
+          }
+
+          // Sync to DB every 5 seconds
+          if (current > 0 && current % 5 === 0 && user) {
+            setDoc(doc(db, 'users', user.uid), { availableTime: current }, { merge: true });
+          }
+        }
+      }, 1000);
+    } else {
+      // Final sync on disconnect
+      if (user && availableTimeRef.current !== null) {
+        setDoc(doc(db, 'users', user.uid), { availableTime: availableTimeRef.current }, { merge: true });
+      }
+    }
+    return () => clearInterval(interval);
+  }, [isConnected, disconnect, user]);
+
+  useEffect(() => {
+    // Resume session automatically if paused and user bought credits
+    if (isPaused && hasStarted && !isConnected && userData?.availableTime && userData.availableTime > 0) {
+      setIsPaused(false);
+      setShowPaywall(false);
+      connect(true);
+    }
+  }, [userData?.availableTime, isPaused, hasStarted, isConnected, connect]);
+
+  /**
+   * Formats a given number of seconds into an "MM:SS min" string.
+   */
+  const formatTime = (seconds: number) => {
+    const validSeconds = Math.max(0, seconds);
+    const m = Math.floor(validSeconds / 60).toString().padStart(2, '0');
+    const s = (validSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s} min`;
+  };
+
+  /**
+   * Toggles the active status of the API session.
+   * If connected or paused, it disconnects. Otherwise, it checks for available credits and starts.
+   */
+  const toggleSession = async () => {
+    if (isConnected || isPaused) {
+      await disconnect(false);
+      setIsPaused(false);
+      setHasStarted(false);
+    } else {
+      if (userData?.availableTime !== undefined && userData.availableTime <= 0) {
+        setShowPaywall(true);
+        return;
+      }
+      setHasStarted(true);
+      await connect();
+    }
+  };
+
+  /**
+   * Parses JSON string for psychological insights.
+   * @param insightsStr JSON representation of insights
+   * @returns Array of insights, or an empty array on failure
+   */
+  const parseInsights = (insightsStr: string) => {
+    try {
+      const parsed = JSON.parse(insightsStr);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  /**
+   * Parses JSON string for the Therapy Tree nodes and links.
+   * @param treeDataStr JSON representation of therapy tree data
+   * @returns Structured object containing `nodes` and `links` arrays
+   */
+  const parseTreeData = (treeDataStr: string) => {
+    try {
+      const parsed = JSON.parse(treeDataStr);
+      return parsed && parsed.nodes ? parsed : { nodes: [], links: [] };
+    } catch {
+      return { nodes: [], links: [] };
+    }
+  };
+
+  /**
+   * Parses JSON string for structured clinical diagnostic data.
+   * @param dataStr JSON representation of clinical data
+   * @returns Structured clinical data object, or empty object on failure
+   */
+  const parseClinicalData = (dataStr: string) => {
+    try {
+      return JSON.parse(dataStr) || {};
+    } catch {
+      return {};
+    }
+  };
+
+  /**
+   * Parses JSON string for the suggested therapeutic plan.
+   * @param planStr JSON representation of the therapeutic plan
+   * @returns Structured plan definition, or null on failure
+   */
+  const parsePlanData = (planStr: string) => {
+    try {
+      return JSON.parse(planStr) || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Get the latest tree data to show at the top of the history
+  const latestTreeData = history.length > 0 ? parseTreeData(history[history.length - 1].tree_data) : { nodes: [], links: [] };
+  const latestClinicalData = history.length > 0 ? parseClinicalData(history[history.length - 1].clinical_data) : {};
+  const latestPlanData = history.length > 0 ? parsePlanData(history[history.length - 1].therapeutic_plan) : null;
+
+  if (!isAuthReady) {
+    return <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] flex items-center justify-center"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>;
+  }
+
+  if (!user) {
+    return <LandingPage onLogin={handleGoogleLogin} authError={authError} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans relative overflow-hidden">
+      
+      {/* Ambient glowing orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            x: [0, 100, -50, 0], 
+            y: [0, -50, 100, 0],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -100, 50, 0], 
+            y: [0, 100, -50, 0],
+            scale: [1, 1.2, 0.8, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, 50, -100, 0], 
+            y: [0, 50, -100, 0],
+            scale: [1, 0.9, 1.1, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
+        />
+      </div>
+
+      {/* Sidebar / Auth Panel */}
+      <div className="border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
+        <div className="hidden md:flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+            <MindHeartLogo className="w-5 h-5 text-teal-500" />
+          </div>
+          <h1 className="text-xl font-medium tracking-tight">Marie</h1>
+        </div>
+
+        {user ? (
+          <div className="flex flex-col flex-1">
+            <div className="hidden md:block bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
+                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-slate-400" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{user.displayName || user.email}</p>
+                  <p className="text-xs text-slate-500">Patient connecté</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 mb-2">
+                <button 
+                  onClick={() => setIsCreditsPanelOpen(true)}
+                  className="w-full flex flex-col gap-2 p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors group"
+                >
+                  <div className="flex items-center gap-2 text-teal-400">
+                    <Zap className="w-4 h-4 shrink-0" /> 
+                    <span className="text-sm font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                  </div>
+                  <div className="w-full bg-teal-500/20 text-teal-400 py-2 rounded-lg text-xs font-bold uppercase tracking-wider group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors text-center">
+                    Recharger
+                  </div>
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
+                >
+                  <Settings className="w-4 h-4" /> Paramètres
+                </button>
+                <button 
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
+                >
+                  <LogOut className="w-4 h-4" /> Déconnexion
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              {/* Personnalité de l'IA Toggle */}
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setIsIncisiveMode(false)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Empathique</span>
+                  </button>
+                  <button
+                    onClick={() => setIsIncisiveMode(true)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm font-medium">Psy Électrochoc</span>
+                  </button>
+                </div>
+              </div>
+
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Vos données</h3>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setShowHistory(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-teal-500" />
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Historique</span>
+                  </div>
+                  <span className="text-xs bg-slate-800 px-2 py-1 rounded-md text-slate-400">{history.length}</span>
+                </button>
+                <button 
+                  onClick={() => setShowTree(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Network className="w-4 h-4 text-indigo-500" />
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Arbre Thérapeutique</span>
+                  </div>
+                </button>
+                <button 
+                  onClick={() => setShowPlan(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Plan Thérapeutique</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Bilan Inline Section */}
+              {latestClinicalData?.recommended_therapy?.type && (
+                <div className="mt-6 pt-6 border-t border-slate-800/50">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Type de professionnel conseillé</h3>
+                  <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 blur-2xl"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Compass className="w-4 h-4 text-indigo-400" />
+                        <span className="text-sm font-bold text-indigo-300">
+                          {latestClinicalData.recommended_therapy.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-3" title={latestClinicalData.recommended_therapy.reason}>
+                        {latestClinicalData.recommended_therapy.reason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="hidden md:flex flex-col flex-1">
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-5">
+              <h2 className="text-lg font-medium text-slate-100 mb-1">
+                Connexion
+              </h2>
+              <p className="text-xs text-slate-400 mb-6">
+                Accédez à votre dossier personnel.
+              </p>
+
+              <div className="space-y-4">
+                {authError && <p className="text-xs text-red-400">{authError}</p>}
+
+                <button 
+                  onClick={handleGoogleLogin}
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Se connecter avec Google
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center justify-center p-6 relative order-1 md:order-2 h-full overflow-hidden">
+        
+        {/* Mobile Top Bar (Auth & Logo) */}
+        <div className="md:hidden w-full max-w-md mb-8 flex items-center justify-between bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-2xl p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+              <MindHeartLogo className="w-4 h-4 text-teal-500" />
+            </div>
+            <span className="font-medium tracking-tight text-slate-100">Marie</span>
+          </div>
+          
+          {user ? (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsCreditsPanelOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors text-xs font-medium text-teal-400 group whitespace-nowrap"
+              >
+                <Zap className="w-3 h-3 shrink-0" /> 
+                <span className="whitespace-nowrap">{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
+                <span className="text-[10px] font-bold uppercase bg-teal-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors shrink-0">
+                  +
+                </span>
+              </button>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
+                title="Paramètres et Confidentialité"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
+                title="Déconnexion"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleGoogleLogin}
+              className="bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
+            >
+              <LogIn className="w-3 h-3" />
+              Connexion
+            </button>
+          )}
+        </div>
+
+        <div className="max-w-md w-full flex flex-col items-center space-y-12">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center p-4 bg-slate-900 rounded-full mb-4 ring-1 ring-slate-800 shadow-xl">
+              <MindHeartLogo className="w-10 h-10 text-teal-400" />
+            </div>
+            <h1 className="text-xl font-medium tracking-tight text-slate-100">
+              Marie
+            </h1>
+            <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
+              Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.
+            </p>
+            {!user && (
+              <p className="text-xs text-amber-500/80 bg-amber-500/10 py-2 px-4 rounded-full border border-amber-500/20 inline-block mt-4">
+                Connectez-vous pour commencer une séance et sauvegarder votre dossier.
+              </p>
+            )}
+          </div>
+
+        {/* Status Indicator */}
+        <div className="flex flex-col items-center justify-center h-48 w-full relative">
+          {isConnected ? (
+            <div className="relative flex items-center justify-center">
+              {/* Pulsing background when speaking */}
+              {isSpeaking && (
+                <>
+                  <div className="absolute w-28 h-28 bg-teal-500/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="absolute w-32 h-32 bg-teal-500/20 rounded-full animate-pulse" />
+                </>
+              )}
+              <div 
+                onClick={() => {
+                  if (isSpeaking) interrupt();
+                }}
+                className={`group relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'bg-teal-500 shadow-[0_0_40px_rgba(20,184,166,0.4)] cursor-pointer hover:bg-red-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-slate-800 ring-1 ring-slate-700'}`}
+                title={isSpeaking ? "Cliquer pour interrompre l'IA" : ""}
+              >
+                {isSpeaking ? (
+                  <>
+                    <Activity className="w-10 h-10 text-slate-950 group-hover:hidden" />
+                    <X className="w-10 h-10 text-slate-950 hidden group-hover:block" />
+                  </>
+                ) : (
+                  <Activity className="w-10 h-10 text-teal-500" />
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-slate-900 ring-1 ring-slate-800 flex items-center justify-center opacity-50">
+              {isSaving ? (
+                <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
+              ) : (
+                <MicOff className="w-8 h-8 text-slate-600" />
+              )}
+            </div>
+          )}
+          
+          <div className="mt-8 text-sm font-medium tracking-wide text-slate-500 uppercase flex flex-col items-center gap-2">
+            <span>{isConnected ? (isSpeaking ? 'Le psychologue parle...' : 'À votre écoute...') : isSaving ? 'Sauvegarde du dossier...' : 'Session terminée'}</span>
+            {timeLeft !== null && (
+              <span className="text-xs text-teal-500/80 font-mono bg-teal-500/10 px-2 py-1 rounded-md">
+                Temps restant : {formatTime(timeLeft)}
+              </span>
+            )}
+          </div>
+          
+          {/* Audio Visualizer */}
+          <div className="mt-4 w-full max-w-xs">
+            <AudioVisualizer analyserNode={analyserNode} isActive={isConnected && !isSpeaking} />
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="w-full p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Controls */}
+        <button
+          onClick={toggleSession}
+          disabled={isSaving || !user}
+          className={`group relative flex items-center justify-center w-full py-4 px-8 rounded-2xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+            isConnected
+              ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 ring-1 ring-slate-800'
+              : (userData?.availableTime !== undefined && userData.availableTime <= 0)
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
+                : 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20'
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <span className="mr-2">Terminer la session</span>
+            </>
+          ) : (
+            <>
+              {(userData?.availableTime !== undefined && userData.availableTime <= 0) ? (
+                <>
+                  <Zap className="w-5 h-5 mr-2" />
+                  <span>Recharger pour continuer</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="w-5 h-5 mr-2" />
+                  <span>{isSaving ? 'Sauvegarde en cours...' : 'Commencer la session'}</span>
+                </>
+              )}
+            </>
+          )}
+        </button>
+
+        {/* Footer info */}
+        {!hasStarted && (
+          <p className="text-xs text-slate-600 text-center max-w-xs">
+            Assurez-vous d'être dans un endroit calme. Vos échanges sont traités en temps réel. Un résumé clinique est sauvegardé pour assurer le suivi.
+          </p>
+        )}
+        </div>
+      </div>
+
+      {/* History Modal */}
+      {/* Delete Confirmation Modal */}
+      {sessionToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-xl font-medium text-slate-100 mb-4 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-3 text-red-500" />
+              Supprimer la séance
+            </h3>
+            <p className="text-slate-400 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette séance ? Cela supprimera également les ajouts à l'arbre thérapeutique qui y sont liés. Cette action est irréversible.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setSessionToDelete(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteSession}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <MindHeartLogo className="w-5 h-5 mr-3 text-teal-500" />
+                Votre Parcours Thérapeutique
+              </h2>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {history.length === 0 ? (
+                <p className="text-slate-500 text-center py-8">Aucune session enregistrée pour le moment.</p>
+              ) : (
+                <>
+                  <div className="space-y-8">
+                    {history.slice().reverse().map((session) => {
+                      const insights = parseInsights(session.insights);
+                      const clinicalData = parseClinicalData(session.clinical_data);
+                      const planData = parsePlanData(session.therapeutic_plan);
+                      
+                      return (
+                        <div key={session.id} className="space-y-4">
+                      <div className="flex items-start justify-between text-sm font-medium text-slate-400">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {new Date(session.date).toLocaleDateString('fr-FR', { 
+                              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </div>
+                          <button
+                            onClick={() => handleDownloadPDF(clinicalData, session.date, session.id, session.summary, insights)}
+                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50 w-fit"
+                            title="Télécharger le dossier clinique"
+                          >
+                            {copiedSessionId === session.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-teal-500" />
+                                <span className="text-teal-500">Téléchargé</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Télécharger</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteSession(session.id)}
+                          className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-400/10"
+                          title="Supprimer cette séance"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50 space-y-4">
+                        <div>
+                          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Résumé de la séance</h3>
+                          <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                            {session.summary}
+                          </p>
+                        </div>
+                        
+                        {insights.length > 0 && (
+                          <div className="pt-4 border-t border-slate-800/50">
+                            <h3 className="text-xs font-semibold text-teal-500/80 uppercase tracking-wider mb-3 flex items-center">
+                              <Sparkles className="w-3 h-3 mr-1.5" />
+                              Prises de conscience (Insights)
+                            </h3>
+                            <ul className="space-y-2">
+                              {insights.map((insight: string, idx: number) => (
+                                <li key={idx} className="text-sm text-slate-200 bg-teal-500/5 border border-teal-500/10 rounded-lg p-3 flex items-start">
+                                  <span className="text-teal-500 mr-2 mt-0.5">•</span>
+                                  <span className="leading-relaxed">{insight}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Clinical Data Section */}
+                        {Object.keys(clinicalData).length > 0 && (
+                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider flex items-center">
+                                <FileText className="w-3 h-3 mr-1.5" />
+                                Notes Cliniques (Dossier de transfert)
+                              </h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {clinicalData.emotional_state && (
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50 md:col-span-2">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
+                                    <HeartPulse className="w-3 h-3 mr-1.5 text-rose-400" /> État Émotionnel
+                                  </h4>
+                                  <p className="text-sm text-slate-300">{clinicalData.emotional_state}</p>
+                                </div>
+                              )}
+                              
+                              {clinicalData.symptoms && clinicalData.symptoms.length > 0 && (
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
+                                    <Stethoscope className="w-3 h-3 mr-1.5" /> Symptômes
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                                    {clinicalData.symptoms.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {clinicalData.triggers && clinicalData.triggers.length > 0 && (
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
+                                    <AlertTriangle className="w-3 h-3 mr-1.5" /> Déclencheurs
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                                    {clinicalData.triggers.map((t: string, i: number) => <li key={i}>{t}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+
+                            {clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0 && (
+                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
+                                  <ShieldCheck className="w-3 h-3 mr-1.5" /> Mécanismes de défense / adaptation
+                                </h4>
+                                <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                                  {clinicalData.defense_mechanisms.map((d: string, i: number) => <li key={i}>{d}</li>)}
+                                </ul>
+                              </div>
+                            )}
+
+                            {clinicalData.risk_assessment && (
+                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
+                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
+                                  <AlertTriangle className="w-3 h-3 mr-1.5 text-orange-400" /> Évaluation des risques
+                                </h4>
+                                <p className="text-sm text-slate-300">{clinicalData.risk_assessment}</p>
+                              </div>
+                            )}
+
+                            {clinicalData.recommended_therapy?.type && (
+                              <div className="bg-indigo-500/10 rounded-lg p-3 border border-indigo-500/20 md:col-span-2">
+                                <h4 className="text-xs font-medium text-indigo-400 flex items-center mb-2">
+                                  <Compass className="w-3 h-3 mr-1.5" /> Recommandation Thérapeutique
+                                </h4>
+                                <p className="text-sm font-bold text-indigo-300">{clinicalData.recommended_therapy.type}</p>
+                                <p className="text-sm text-indigo-200/80 mt-1 leading-relaxed">{clinicalData.recommended_therapy.reason}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Therapeutic Plan Section */}
+                        {planData && planData.focus && (
+                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
+                            <h3 className="text-xs font-semibold text-amber-500/80 uppercase tracking-wider mb-3 flex items-center">
+                              <Target className="w-3 h-3 mr-1.5" />
+                              Plan d'Action
+                            </h3>
+                            
+                            <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/10">
+                              <h4 className="text-sm font-medium text-amber-400 mb-2">Objectif : {planData.focus}</h4>
+                              
+                              {planData.actions && planData.actions.length > 0 && (
+                                <ul className="space-y-2 mt-3">
+                                  {planData.actions.map((action: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-slate-300 flex items-start">
+                                      <CheckCircle2 className="w-4 h-4 text-teal-500 mr-2 flex-shrink-0 mt-0.5" />
+                                      <span>{action}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+
+                              {planData.hygiene_and_wellbeing && planData.hygiene_and_wellbeing.length > 0 && (
+                                <div className="mt-4 pt-3 border-t border-amber-500/10">
+                                  <h4 className="text-xs font-semibold text-rose-400/80 uppercase tracking-wider mb-2 flex items-center">
+                                    <Heart className="w-3 h-3 mr-1.5" />
+                                    Hygiène Mentale & Bien-être
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {planData.hygiene_and_wellbeing.map((item: string, idx: number) => (
+                                      <li key={idx} className="text-sm text-slate-300 flex items-start">
+                                        <Sparkles className="w-4 h-4 text-rose-400 mr-2 flex-shrink-0 mt-0.5" />
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {planData.adjustments && (
+                                <div className="mt-4 pt-3 border-t border-amber-500/10">
+                                  <p className="text-xs text-amber-500/70 uppercase tracking-wider mb-1">Ajustements</p>
+                                  <p className="text-sm text-slate-400">{planData.adjustments}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tree Modal */}
+      {showTree && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl rounded-[24px] w-full max-w-5xl h-[85vh] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-800/50 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-20">
+              <button 
+                onClick={() => setShowTree(false)}
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors absolute left-4"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-semibold text-slate-100 w-full flex items-center justify-center gap-2">
+                <Network className="w-5 h-5 text-indigo-400" />
+                Arbre Thérapeutique
+                <div className="group relative flex items-center">
+                  <Info className="w-4 h-4 text-slate-400 cursor-help hover:text-teal-400 transition-colors" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-3 bg-slate-800/90 backdrop-blur-md text-xs text-slate-200 rounded-xl border border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none text-center font-normal">
+                    Cette carte visuelle relie vos <span className="text-[#2DD4BF] font-medium">émotions</span>, vos <span className="text-[#818CF8] font-medium">symptômes</span> et leurs <span className="text-[#F472B6] font-medium">causes profondes</span> pour vous aider à comprendre votre progression.
+                  </div>
+                </div>
+              </h2>
+              <div className="w-9" /> {/* Spacer for centering */}
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col bg-slate-950/30">
+              {history.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-slate-500 text-center">Aucun arbre disponible pour le moment.</p>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col min-h-0 bg-slate-900/40 backdrop-blur-md rounded-2xl border border-slate-800/50 overflow-hidden shadow-sm">
+                  {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
+                    <TherapyTree data={latestTreeData} />
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-slate-500 text-center">L'arbre thérapeutique est en cours de construction.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Therapeutic Plan Modal */}
+      {showPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <ClipboardList className="w-5 h-5 mr-3 text-amber-500" />
+                Plan Thérapeutique
+              </h2>
+              <button 
+                onClick={() => setShowPlan(false)}
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 space-y-8">
+              {history.length === 0 || !latestPlanData || !latestPlanData.focus ? (
+                <div className="text-center py-12">
+                  <Target className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                  <p className="text-slate-400">Aucun plan thérapeutique n'a encore été généré.</p>
+                  <p className="text-slate-500 text-sm mt-2">Un plan sera proposé à la fin de votre prochaine séance.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                    <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center mb-3 relative z-10">
+                      <Target className="w-4 h-4 mr-2" /> Objectif Principal
+                    </h3>
+                    <p className="text-slate-200 text-lg relative z-10 font-medium">
+                      {latestPlanData.focus}
+                    </p>
+                  </div>
+
+                  {latestPlanData.actions && latestPlanData.actions.length > 0 && (
+                    <div className="bg-slate-950/50 border border-slate-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-4">
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-teal-500" /> Actions & Exercices Recommandés
+                      </h3>
+                      <ul className="space-y-3">
+                        {latestPlanData.actions.map((action: string, idx: number) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="text-slate-300 leading-relaxed">{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {latestPlanData.hygiene_and_wellbeing && latestPlanData.hygiene_and_wellbeing.length > 0 && (
+                    <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-rose-400 uppercase tracking-wider flex items-center mb-4">
+                        <Heart className="w-4 h-4 mr-2 text-rose-500" /> Hygiène Mentale & Bien-être
+                      </h3>
+                      <ul className="space-y-3">
+                        {latestPlanData.hygiene_and_wellbeing.map((item: string, idx: number) => (
+                          <li key={idx} className="flex items-start">
+                            <Sparkles className="w-5 h-5 text-rose-400 mr-3 flex-shrink-0 mt-0.5" />
+                            <span className="text-slate-300 leading-relaxed">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {latestPlanData.adjustments && (
+                    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-xl p-6">
+                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-3">
+                        <Activity className="w-4 h-4 mr-2 text-blue-400" /> Ajustements & Remarques
+                      </h3>
+                      <p className="text-slate-300 leading-relaxed">
+                        {latestPlanData.adjustments}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="text-center mt-8">
+                    <p className="text-xs text-slate-500">
+                      Ce plan sera évalué et ajusté avec vous lors de la prochaine séance.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <Settings className="w-5 h-5 mr-3 text-slate-400" />
+                Paramètres & Confidentialité
+              </h2>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Préférences</h3>
+
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-slate-200">Langue parlée</p>
+                      <p className="text-xs text-slate-500">Choisissez la langue de l'IA.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {[
+                      { code: 'fr', flagCode: 'fr', label: 'Français' },
+                      { code: 'en', flagCode: 'gb', label: 'English' },
+                      { code: 'de', flagCode: 'de', label: 'Deutsch' },
+                      { code: 'es', flagCode: 'es', label: 'Español' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          localStorage.setItem('marie_language', lang.code);
+                        }}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-transform hover:scale-105 border-2 overflow-hidden ${
+                          language === lang.code 
+                            ? 'border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)]' 
+                            : 'border-slate-700 bg-slate-900 opacity-70 hover:opacity-100 hover:border-slate-500'
+                        }`}
+                        title={lang.label}
+                      >
+                        <img 
+                          src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
+                          srcSet={`https://flagcdn.com/w80/${lang.flagCode}.png 2x`}
+                          width="40" 
+                          alt={lang.label}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                  <div className="flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-teal-400 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-slate-200">Voix de l'assistant</p>
+                      <p className="text-xs text-slate-500">Choisissez la voix qui vous convient le mieux.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select 
+                      value={voiceName}
+                      onChange={(e) => {
+                        setVoiceName(e.target.value);
+                        localStorage.setItem('marie_voice', e.target.value);
+                      }}
+                      className="flex-1 sm:flex-none bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block p-2"
+                    >
+                      <option value="Zephyr">Zephyr</option>
+                      <option value="Kore">Kore</option>
+                      <option value="Puck">Puck</option>
+                      <option value="Charon">Charon</option>
+                      <option value="Fenrir">Fenrir</option>
+                    </select>
+                    <button
+                      onClick={handlePreviewVoice}
+                      disabled={isPreviewing}
+                      className="p-2 rounded-lg bg-teal-500/10 text-teal-500 hover:bg-teal-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Écouter un aperçu"
+                    >
+                      {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
+                
+                <button 
+                  onClick={() => {
+                    setShowSettings(false);
+                    setShowPrivacyPolicy(true);
+                  }}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-teal-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Politique de confidentialité</p>
+                      <p className="text-xs text-slate-500">Consulter les règles de traitement de vos données.</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={handleDownloadData}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Download className="w-5 h-5 text-blue-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Exporter mes données</p>
+                      <p className="text-xs text-slate-500">Télécharger tout l'historique de vos séances au format JSON.</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre compte et toutes vos données ? Cette action est irréversible.")) {
+                      handleDeleteAccount();
+                    }
+                  }}
+                  disabled={isDeletingAccount}
+                  className="w-full flex items-center justify-between p-4 rounded-xl bg-red-950/20 hover:bg-red-950/40 transition-colors border border-red-900/30 group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    {isDeletingAccount ? <Loader2 className="w-5 h-5 text-red-500 animate-spin" /> : <Trash2 className="w-5 h-5 text-red-500" />}
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-red-400 group-hover:text-red-300">Supprimer mon compte</p>
+                      <p className="text-xs text-red-500/70">Effacer définitivement toutes vos données de nos serveurs.</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Modal */}
+      {showEmergencyModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/90 backdrop-blur-md">
+          <div className="bg-slate-900 border border-red-500/50 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl overflow-hidden">
+            <div className="bg-red-500/10 p-6 border-b border-red-500/20">
+              <h2 className="text-2xl font-medium text-red-400 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-3" />
+                Besoin d'aide immédiate ?
+              </h2>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              <p className="text-slate-300 leading-relaxed">
+                Il semble que vous traversiez un moment extrêmement difficile. Votre sécurité et votre bien-être sont notre priorité absolue. 
+                <strong className="text-white block mt-2">Vous n'êtes pas seul(e) et de l'aide est disponible immédiatement, 24h/24 et 7j/7.</strong>
+              </p>
+
+              <div className="space-y-4">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h3 className="text-lg font-medium text-white mb-2">Numéros d'urgence (Gratuits)</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">Urgences Générales (Europe)</span>
+                      <a href="tel:112" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">112</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">SAMU (France)</span>
+                      <a href="tel:15" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">15</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">Prévention Suicide (France)</span>
+                      <a href="tel:3114" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">3114</a>
+                    </li>
+                    <li className="flex items-center justify-between">
+                      <span className="text-slate-300">SOS Amitié (France)</span>
+                      <a href="tel:0972394050" className="bg-slate-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors">09 72 39 40 50</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-400 italic">
+                S'il vous plaît, contactez l'un de ces services ou rendez-vous aux urgences les plus proches. Des professionnels sont là pour vous écouter sans jugement et vous aider à traverser cette épreuve.
+              </p>
+            </div>
+            
+            <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+              <button
+                onClick={() => setShowEmergencyModal(false)}
+                className="px-6 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                J'ai compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consent Modal */}
+      {showConsentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-slate-800">
+              <h2 className="text-2xl font-medium text-slate-100 flex items-center">
+                <ShieldCheck className="w-6 h-6 mr-3 text-teal-500" />
+                Création de compte & Consentement
+              </h2>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Bienvenue sur Marie. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
+              </p>
+
+              <div className="space-y-4">
+                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        checked={consentTOS}
+                        onChange={(e) => setConsentTOS(e.target.checked)}
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedTOS(!expandedTOS)}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-200">Conditions Générales d'Utilisation</p>
+                        {expandedTOS ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                      </div>
+                      {expandedTOS && (
+                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                          <p><strong>1. Nature du Service :</strong> Marie est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
+                          <p><strong>2. Urgences :</strong> Marie n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
+                          <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte (hallucinations). Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
+                          <p><strong>4. Responsabilité :</strong> L'éditeur de Marie décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques et périls.</p>
+                          <p><strong>5. Âge requis :</strong> L'utilisation de ce service est strictement réservée aux personnes majeures (18 ans et plus).</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        checked={consentHealthData}
+                        onChange={(e) => setConsentHealthData(e.target.checked)}
+                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedHealth(!expandedHealth)}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-200">Traitement des Données Sensibles (RGPD)</p>
+                        {expandedHealth ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                      </div>
+                      {expandedHealth && (
+                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
+                          <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant Marie.</p>
+                          <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
+                          <p><strong>3. Sous-traitants & IA Privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>strictement pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
+                          <p><strong>4. Vos Droits :</strong> Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application intègre des fonctionnalités vous permettant d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique en un clic depuis les paramètres.</p>
+                          <p><strong>5. Durée de conservation :</strong> Vos données sont conservées uniquement tant que votre compte est actif. La suppression de votre compte entraîne l'effacement immédiat et irréversible de vos données de nos serveurs.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800 flex justify-end gap-3">
+              <button 
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              >
+                Refuser et se déconnecter
+              </button>
+              <button 
+                onClick={handleConsentSubmit}
+                disabled={!consentTOS || !consentHealthData}
+                className="px-6 py-2 rounded-lg text-sm font-medium bg-teal-500 hover:bg-teal-600 text-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Créer mon compte
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyPolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h2 className="text-xl font-medium text-slate-100 flex items-center">
+                <ShieldCheck className="w-5 h-5 mr-3 text-teal-500" />
+                Politique de Confidentialité
+              </h2>
+              <button 
+                onClick={() => setShowPrivacyPolicy(false)}
+                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] text-sm text-slate-300">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-slate-100">1. Introduction</h3>
+                <p>
+                  La présente politique de confidentialité explique comment Marie collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
+                </p>
+
+                <h3 className="text-lg font-medium text-slate-100">2. Données collectées</h3>
+                <p>
+                  <strong>Données de compte :</strong> Lors de votre connexion via Google, nous collectons votre adresse email, votre nom d'utilisateur et votre photo de profil fournis par Google.
+                </p>
+                <p>
+                  <strong>Données de santé (Sensibles) :</strong> Les conversations vocales et textuelles que vous avez avec l'IA peuvent contenir des données de santé mentale. Ces données sont traitées en temps réel.
+                </p>
+                <p>
+                  <strong>Données générées :</strong> L'IA génère des résumés, des analyses cliniques et des plans thérapeutiques basés sur vos conversations.
+                </p>
+
+                <h3 className="text-lg font-medium text-slate-100">3. Utilisation des données et IA Privée</h3>
+                <p>
+                  Vos données sont utilisées <strong>exclusivement</strong> pour vous fournir le service d'accompagnement psychologique.
+                </p>
+                <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-4 text-teal-400">
+                  <strong>Garantie de non-entraînement :</strong> Nous utilisons une infrastructure payante (Google Cloud API). Vos données vocales et textuelles <strong>ne sont pas utilisées</strong> par Google ou par nous-mêmes pour entraîner, améliorer ou perfectionner des modèles d'intelligence artificielle.
+                </div>
+
+                <h3 className="text-lg font-medium text-slate-100">4. Stockage et Sécurité</h3>
+                <p>
+                  Vos résumés et analyses sont stockés de manière sécurisée sur les serveurs de Firebase (Google Cloud). Les flux audio en temps réel ne sont <strong>pas stockés</strong> après leur traitement immédiat.
+                </p>
+
+                <h3 className="text-lg font-medium text-slate-100">5. Vos droits (RGPD)</h3>
+                <p>
+                  Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants :
+                </p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Droit d'accès et de portabilité :</strong> Vous pouvez télécharger l'intégralité de vos données au format JSON depuis les paramètres.</li>
+                  <li><strong>Droit à l'effacement (Droit à l'oubli) :</strong> Vous pouvez supprimer définitivement votre compte et toutes vos données associées en un clic depuis les paramètres.</li>
+                  <li><strong>Droit de rectification :</strong> Vous pouvez modifier les informations de votre profil via votre compte Google.</li>
+                </ul>
+
+                <h3 className="text-lg font-medium text-slate-100">6. Cookies et Traceurs</h3>
+                <p>
+                  Marie n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
+                </p>
+
+                <h3 className="text-lg font-medium text-slate-100">7. Mentions Légales</h3>
+                <p>
+                  <strong>Éditeur du service :</strong> Marie<br />
+                  <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (Serveurs de données situés à Londres, Royaume-Uni - région <em>europe-west2</em>, en stricte conformité avec le RGPD).
+                </p>
+
+                <h3 className="text-lg font-medium text-slate-100">8. Contact et Exercice de vos droits</h3>
+                <p>
+                  Pour toute question relative à la protection de vos données personnelles, ou pour exercer vos droits (accès, rectification, suppression), vous pouvez nous contacter directement à l'adresse suivante :
+                </p>
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 inline-block">
+                  <a href="mailto:julyand36@gmail.com" className="text-teal-400 hover:text-teal-300 font-medium">
+                    julyand36@gmail.com
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credits Panel Modal */}
+      {isCreditsPanelOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-8 text-center space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-medium text-slate-100 flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-teal-500" />
+                  Recharger vos crédits
+                </h2>
+                <button 
+                  onClick={() => setIsCreditsPanelOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <p className="text-slate-400 text-sm leading-relaxed text-left">
+                Marie fonctionne avec un système de crédits de temps. Vous ne payez que pour le temps de séance que vous consommez. Le temps non utilisé est conservé pour vos prochaines séances.
+              </p>
+
+              <div className="space-y-4">
+                {/* 30 Minutes Option */}
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
+                      <div className="text-slate-500 text-sm">Séance standard</div>
+                    </div>
+                    <div className="text-xl font-semibold text-teal-400">13 €</div>
+                  </div>
+                  <a 
+                    href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Acheter 30 minutes
+                  </a>
+                </div>
+
+                {/* 1 Hour Option */}
+                <div className="bg-slate-800/50 border border-teal-500/30 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-teal-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                    Recommandé
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <div className="text-slate-100 font-medium">Forfait 1 heure</div>
+                      <div className="text-slate-500 text-sm">Thérapie approfondie</div>
+                    </div>
+                    <div className="text-xl font-semibold text-teal-400">20 €</div>
+                  </div>
+                  <a 
+                    href={`https://buy.stripe.com/00w14f6208gXdnQ56f9IQ04${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Acheter 1 heure
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Paywall Modal */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto">
+                <Calendar className="w-8 h-8 text-teal-500" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-medium text-slate-100">Temps écoulé</h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Votre crédit de temps gratuit (5 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
+                </p>
+              </div>
+
+              <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between">
+                <div className="text-left">
+                  <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
+                  <div className="text-slate-500 text-sm">Séance prolongée</div>
+                </div>
+                <div className="text-xl font-semibold text-teal-400">13 €</div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-4">
+                <a 
+                  href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
+                >
+                  <Zap className="w-5 h-5" />
+                  Acheter 30 minutes
+                </a>
+
+                <button 
+                  onClick={() => {
+                    disconnect(false);
+                    setIsPaused(false);
+                    setHasStarted(false);
+                    setShowPaywall(false);
+                  }}
+                  className="w-full py-3 px-4 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
+                >
+                  Fermer et terminer la séance
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ==========================================
+// Fichier : src/components/AudioVisualizer.tsx
+// ==========================================
+import React, { useEffect, useRef } from 'react';
+
+interface AudioVisualizerProps {
+  analyserNode: AnalyserNode | null;
+  isActive: boolean;
+}
+
+export function AudioVisualizer({ analyserNode, isActive }: AudioVisualizerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number>();
+
+  useEffect(() => {
+    if (!analyserNode || !isActive || !canvasRef.current) {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+      // Clear canvas when inactive
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          // Draw flat line
+          ctx.beginPath();
+          ctx.moveTo(0, canvasRef.current.height / 2);
+          ctx.lineTo(canvasRef.current.width, canvasRef.current.height / 2);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#0f766e'; // teal-700
+          ctx.stroke();
+        }
+      }
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+
+    const draw = () => {
+      analyserNode.getByteFrequencyData(dataArray);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / dataArray.length) * 2.5;
+      let x = 0;
+
+      // Calculate average volume for a smoother effect
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      const average = sum / dataArray.length;
+      
+      // Draw a smooth wave based on frequency
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      
+      for (let i = 0; i < dataArray.length; i++) {
+        const v = dataArray[i] / 255.0; // 0 to 1
+        // Create a wave effect centered vertically
+        const y = (canvas.height / 2) + (Math.sin(i * 0.5) * v * (canvas.height / 2));
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+
+        x += barWidth;
+      }
+
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#14b8a6'; // teal-500
+      ctx.stroke();
+
+      // Also draw a few bars in the center based on average volume
+      const numBars = 5;
+      const barSpacing = 4;
+      const centerBarWidth = 4;
+      const startX = (canvas.width - (numBars * centerBarWidth + (numBars - 1) * barSpacing)) / 2;
+      
+      for (let i = 0; i < numBars; i++) {
+        // Vary height slightly for each bar
+        const heightMultiplier = i === 2 ? 1 : (i === 1 || i === 3) ? 0.7 : 0.4;
+        const barHeight = Math.max(2, (average / 255.0) * canvas.height * heightMultiplier);
+        
+        ctx.fillStyle = '#2dd4bf'; // teal-400
+        ctx.beginPath();
+        ctx.roundRect(
+          startX + i * (centerBarWidth + barSpacing), 
+          (canvas.height - barHeight) / 2, 
+          centerBarWidth, 
+          barHeight,
+          2
+        );
+        ctx.fill();
+      }
+
+      requestRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [analyserNode, isActive]);
+
+  return (
+    <div className={`h-12 w-full flex items-center justify-center transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-50'}`}>
+      <canvas ref={canvasRef} width={200} height={40} className="w-full max-w-[200px]" />
+    </div>
+  );
+}
+
+
+// ==========================================
+// Fichier : src/components/LandingPage.tsx
+// ==========================================
+import React, { useState } from 'react';
+import { ShieldCheck, Clock, Sparkles, ArrowRight, Building2, User, HeartPulse, TrendingDown, BookOpen, X, Send } from 'lucide-react';
+import { MindHeartLogo } from './MindHeartLogo';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
+
+interface LandingPageProps {
+  onLogin: () => void;
+  authError?: string;
+}
+
+const b2bData = [
+  {
+    name: 'Absentéisme (jours/an)',
+    'Sans accompagnement': 12,
+    'Avec Marie': 4,
+  },
+  {
+    name: 'Turnover (%)',
+    'Sans accompagnement': 15,
+    'Avec Marie': 5,
+  },
+  {
+    name: 'Baisse productivité (%)',
+    'Sans accompagnement': 35,
+    'Avec Marie': 10,
+  },
+];
+
+export function LandingPage({ onLogin, authError }: LandingPageProps) {
+  const [view, setView] = useState<'b2c' | 'b2b'>('b2c');
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [formData, setFormData] = useState({
+    company: '',
+    employees: '',
+    email: '',
+    description: ''
+  });
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const subject = encodeURIComponent(`Demande B2B Marie AI - ${formData.company}`);
+    const body = encodeURIComponent(
+      `Entreprise: ${formData.company}\n` +
+      `Nombre d'employés: ${formData.employees}\n` +
+      `Email de contact: ${formData.email}\n\n` +
+      `Descriptif du besoin:\n${formData.description}`
+    );
+    window.location.href = `mailto:julyand36@gmail.com?subject=${subject}&body=${body}`;
+    setShowContactForm(false);
+    setFormData({ company: '', employees: '', email: '', description: '' });
+  };
+
+  return (
+    <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 font-sans selection:bg-teal-500/30 relative overflow-hidden">
+      {/* Ambient glowing orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <motion.div 
+          animate={{ 
+            x: [0, 100, -50, 0], 
+            y: [0, -50, 100, 0],
+            scale: [1, 1.1, 0.9, 1]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -100, 50, 0], 
+            y: [0, 100, -50, 0],
+            scale: [1, 1.2, 0.8, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, 50, -100, 0], 
+            y: [0, 50, -100, 0],
+            scale: [1, 0.9, 1.1, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
+        />
+      </div>
+
+      {/* Navigation */}
+      <nav className="border-b border-slate-800/50 bg-slate-950/50 backdrop-blur-md fixed top-0 w-full z-50">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+              <MindHeartLogo className="w-5 h-5 text-teal-500" />
+            </div>
+            <span className="text-xl font-medium tracking-tight">Marie</span>
+          </div>
+
+          {/* View Toggle (Mobile: hidden, Desktop: visible) */}
+          <div className="hidden md:flex bg-slate-900 p-1 rounded-full border border-slate-800">
+            <button
+              onClick={() => setView('b2c')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                view === 'b2c' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              Particuliers
+            </button>
+            <button
+              onClick={() => setView('b2b')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                view === 'b2b' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              Entreprises
+            </button>
+          </div>
+
+          <button 
+            onClick={onLogin}
+            className="text-sm font-medium px-5 py-2.5 rounded-full bg-white text-slate-950 hover:bg-slate-200 transition-colors"
+          >
+            Se connecter
+          </button>
+        </div>
+        
+        {/* Mobile View Toggle */}
+        <div className="md:hidden flex justify-center pb-3 bg-slate-950/50 backdrop-blur-md border-b border-slate-800/50">
+          <div className="flex bg-slate-900 p-1 rounded-full border border-slate-800">
+            <button
+              onClick={() => setView('b2c')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                view === 'b2c' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              Particuliers
+            </button>
+            <button
+              onClick={() => setView('b2b')}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                view === 'b2b' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              Entreprises
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="pt-32 md:pt-32 pb-16 px-6">
+        {view === 'b2c' ? (
+          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col items-center text-center max-w-3xl mx-auto mt-8 md:mt-16 mb-24">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-medium mb-8">
+                <Sparkles className="w-4 h-4" />
+                <span>Votre Coach Émotionnel Personnel</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-8 leading-[1.1]">
+                La santé mentale, <br className="hidden md:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-teal-500">
+                  accessible à tout moment.
+                </span>
+              </h1>
+              <p className="text-lg md:text-xl text-slate-400 mb-6 leading-relaxed max-w-2xl">
+                Créé par un étudiant avec une mission simple : rendre le soutien psychologique disponible 24h/24 et 7j/7 pour tous.
+              </p>
+              <p className="text-base text-slate-500 mb-10 leading-relaxed max-w-2xl">
+                Marie vous écoute, vous aide à traverser vos moments difficiles, et vous oriente vers la thérapie (TCC, EMDR, psychanalyse...) qui correspondra le mieux à vos besoins uniques.
+              </p>
+              <button 
+                onClick={onLogin}
+                className="group flex items-center gap-2 text-base font-medium px-8 py-4 rounded-full bg-teal-500 text-slate-950 hover:bg-teal-400 transition-all hover:scale-105 active:scale-95"
+              >
+                Commencer ma première séance
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              {authError && (
+                <p className="mt-4 text-sm text-red-400 bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20">
+                  {authError}
+                </p>
+              )}
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid md:grid-cols-3 gap-6 mt-24">
+              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20">
+                  <Clock className="w-6 h-6 text-blue-400" />
+                </div>
+                <h3 className="text-xl font-medium mb-3">Disponible 24/7</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Une angoisse au milieu de la nuit ? Un coup de stress avant un examen ? Marie est là pour vous écouter instantanément.
+                </p>
+              </div>
+
+              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 border border-purple-500/20">
+                  <MindHeartLogo className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-medium mb-3">Orientation Thérapeutique</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Au fil de vos échanges, Marie identifie vos schémas et vous suggère le type de thérapie humaine le plus adapté à votre profil.
+                </p>
+              </div>
+
+              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center mb-6 border border-teal-500/20">
+                  <ShieldCheck className="w-6 h-6 text-teal-400" />
+                </div>
+                <h3 className="text-xl font-medium mb-3">Espace Sécurisé</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Vos échanges sont privés. Vous gardez le contrôle total sur vos données, pour vous confier sans aucun jugement.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col items-center text-center max-w-3xl mx-auto mt-8 md:mt-16 mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-8">
+                <Building2 className="w-4 h-4" />
+                <span>Solutions pour les Entreprises</span>
+              </div>
+              <h1 className="text-5xl md:text-6xl font-semibold tracking-tight mb-8 leading-[1.1]">
+                Un esprit sain dans un corps sain : <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
+                  le secret de la prévention.
+                </span>
+              </h1>
+              <p className="text-lg md:text-xl text-slate-400 mb-10 leading-relaxed max-w-2xl">
+                L'accompagnement émotionnel proactif permet une baisse drastique des mises en arrêt maladie. L'esprit est intimement lié au corps : soulager la charge mentale, c'est prévenir les maladies physiques.
+              </p>
+              <button 
+                onClick={() => setShowContactForm(true)}
+                className="group flex items-center gap-2 text-base font-medium px-8 py-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-all hover:scale-105 active:scale-95"
+              >
+                Protéger mes équipes
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            {/* Data Section */}
+            <div className="grid lg:grid-cols-2 gap-12 items-center mt-16">
+              <div className="space-y-8">
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                      <TrendingDown className="w-6 h-6 text-red-400" />
+                    </div>
+                    <h3 className="text-2xl font-medium">Baisse de l'absentéisme</h3>
+                  </div>
+                  <p className="text-slate-400 leading-relaxed mb-6">
+                    Les études démontrent que les employés bénéficiant d'un soutien psychologique régulier (coach émotionnel) voient leur taux d'arrêt maladie chuter de manière significative. Le stress chronique étant un immunosuppresseur majeur.
+                  </p>
+                  <a href="https://www.who.int/news-room/fact-sheets/detail/mental-health-at-work" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                    <BookOpen className="w-4 h-4" />
+                    Rapport de l'OMS sur la santé mentale au travail
+                  </a>
+                </div>
+
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+                      <HeartPulse className="w-6 h-6 text-teal-400" />
+                    </div>
+                    <h3 className="text-2xl font-medium">Le lien Corps-Esprit</h3>
+                  </div>
+                  <p className="text-slate-400 leading-relaxed mb-6">
+                    L'American Psychological Association (APA) souligne que le stress non géré est lié aux six principales causes de décès. Un esprit sain prévient l'apparition de troubles somatiques (troubles musculo-squelettiques, maladies cardiovasculaires).
+                  </p>
+                  <a href="https://www.apa.org/topics/stress/health" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                    <BookOpen className="w-4 h-4" />
+                    Étude de l'APA sur le stress et la santé physique
+                  </a>
+                </div>
+              </div>
+
+              {/* Chart */}
+              <div className="bg-slate-900/30 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl h-[500px] flex flex-col">
+                <h3 className="text-xl font-medium mb-2 text-center">Impact de l'accompagnement émotionnel</h3>
+                <p className="text-sm text-slate-500 text-center mb-8">Comparaison moyenne annuelle par employé</p>
+                <div className="flex-1 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={b2bData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorSans" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
+                        </linearGradient>
+                        <linearGradient id="colorAvec" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
+                      <Tooltip 
+                        cursor={{ fill: '#27272a', opacity: 0.4 }}
+                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#f4f4f5' }}
+                        itemStyle={{ color: '#f4f4f5' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      <Bar dataKey="Sans accompagnement" fill="url(#colorSans)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Avec Marie" fill="url(#colorAvec)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/50 py-12 text-center text-slate-500 text-sm">
+        <p>© {new Date().getFullYear()} Marie AI. Tous droits réservés.</p>
+        <p className="mt-2">Ceci est un outil d'accompagnement et ne remplace pas un suivi médical ou psychiatrique en cas d'urgence.</p>
+      </footer>
+      {/* Contact Form Modal */}
+      {showContactForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setShowContactForm(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <Building2 className="w-5 h-5 text-blue-400" />
+              </div>
+              <h2 className="text-xl font-semibold">Demande d'informations</h2>
+            </div>
+            
+            <p className="text-slate-400 text-sm mb-6">
+              Laissez-nous vos coordonnées et décrivez-nous vos besoins. Nous vous recontacterons rapidement pour vous proposer une solution adaptée.
+            </p>
+
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nom de l'entreprise</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.company}
+                  onChange={(e) => setFormData({...formData, company: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  placeholder="Ex: Acme Corp"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nombre d'employés</label>
+                <select 
+                  required
+                  value={formData.employees}
+                  onChange={(e) => setFormData({...formData, employees: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                >
+                  <option value="" disabled>Sélectionnez une taille</option>
+                  <option value="1-10">1 à 10 employés</option>
+                  <option value="11-50">11 à 50 employés</option>
+                  <option value="51-200">51 à 200 employés</option>
+                  <option value="201-500">201 à 500 employés</option>
+                  <option value="500+">Plus de 500 employés</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email de contact</label>
+                <input 
+                  type="email" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  placeholder="vous@entreprise.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Descriptif du besoin</label>
+                <textarea 
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows={4}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none"
+                  placeholder="Quels sont les défis actuels de vos équipes ?"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-xl transition-colors mt-6"
+              >
+                <Send className="w-4 h-4" />
+                Envoyer ma demande
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ==========================================
+// Fichier : src/components/MindHeartLogo.tsx
+// ==========================================
+import React from 'react';
+import { Brain, Heart } from 'lucide-react';
+
+export const MindHeartLogo = ({ className = "w-6 h-6", ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div className={`relative inline-flex items-center justify-center ${className}`} {...props}>
+      <Brain className="w-full h-full text-current" strokeWidth={1.5} />
+      <Heart className="absolute -bottom-1 -right-1 w-[55%] h-[55%] text-pink-500 fill-pink-500/30 drop-shadow-sm" strokeWidth={2.5} />
+    </div>
+  );
+};
+
+
+// ==========================================
+// Fichier : src/components/TherapyTree.tsx
+// ==========================================
+import { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import { Heart, Leaf, Target, X } from 'lucide-react';
+import { MindHeartLogo } from './MindHeartLogo';
+
+interface Node extends d3.SimulationNodeDatum {
+  id: string;
+  label: string;
+  type: 'symptom' | 'emotion' | 'root_cause' | string;
+}
+
+interface Link extends d3.SimulationLinkDatum<Node> {
+  source: string | Node;
+  target: string | Node;
+  label?: string;
+}
+
+interface TreeData {
+  nodes: Node[];
+  links: Link[];
+}
+
+export function TherapyTree({ data }: { data: TreeData }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!svgRef.current || !data || !data.nodes || data.nodes.length === 0) return;
+
+    const width = 800;
+    const height = 600;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+
+    // Respirelax inspired calming palette
+    const getColor = (type: string) => {
+      switch (type) {
+        case 'root_cause': return '#F472B6'; // Soft Pink (more distinct)
+        case 'emotion': return '#2DD4BF'; // Calming Teal
+        case 'symptom': return '#818CF8'; // Soft Indigo (moved from root cause)
+        default: return '#94A3B8'; // Slate
+      }
+    };
+
+    const g = svg.append('g');
+
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 3])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      });
+
+    svg.call(zoom);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2).scale(0.9));
+
+    const nodes = data.nodes.map(d => ({ ...d }));
+    const links = data.links.map(d => ({ ...d }));
+
+    // Gentle, slow forces for a floating, underwater feel
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id((d: any) => d.id).distance(180))
+      .force('charge', d3.forceManyBody().strength(-800))
+      .force('center', d3.forceCenter(0, 0))
+      .force('collide', d3.forceCollide().radius(90).iterations(3))
+      .force('x', d3.forceX(0).strength(0.03))
+      .force('y', d3.forceY(0).strength(0.03))
+      .alphaDecay(0.015); // Slower settling
+
+    // Links: Soft, glowing, dotted, flowing
+    const link = g.append('g')
+      .selectAll('path')
+      .data(links)
+      .join('path')
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(255, 255, 255, 0.2)')
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '4 12')
+      .attr('stroke-linecap', 'round')
+      .style('animation', 'flowDots 30s linear infinite');
+
+    const linkLabelGroup = g.append('g')
+      .selectAll('g')
+      .data(links)
+      .join('g');
+
+    const linkLabel = linkLabelGroup.append('text')
+      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-size', '11px')
+      .attr('font-weight', '400')
+      .attr('fill', 'rgba(255,255,255,0.5)')
+      .attr('text-anchor', 'middle')
+      .attr('letter-spacing', '0.5px')
+      .text(d => d.label || '');
+
+    const node = g.append('g')
+      .selectAll('g')
+      .data(nodes)
+      .join('g')
+      .style('cursor', 'pointer')
+      .call(d3.drag<any, any>()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended));
+
+    const innerNode = node.append('g')
+      .style('animation', () => `float ${4 + Math.random() * 3}s ease-in-out infinite`);
+
+    // Solid Core
+    innerNode.append('circle')
+      .attr('r', 16)
+      .attr('fill', d => getColor(d.type))
+      .attr('stroke', 'rgba(255,255,255,0.9)')
+      .attr('stroke-width', 1.5)
+      .style('transition', 'all 0.3s ease');
+
+    node.on('mouseover', function(event, d) {
+      d3.select(this).select('circle')
+        .attr('r', 20);
+    })
+    .on('mouseout', function(event, d) {
+      d3.select(this).select('circle')
+        .attr('r', 16);
+    })
+    .on('click', (event, d) => {
+      event.stopPropagation();
+      setSelectedNode(d as Node);
+      setTooltipPos({ x: event.clientX, y: event.clientY });
+    });
+
+    innerNode.append('text')
+      .attr('dy', 55)
+      .attr('text-anchor', 'middle')
+      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-size', '13px')
+      .attr('font-weight', '400')
+      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('letter-spacing', '0.5px')
+      .style('pointer-events', 'none')
+      .text(d => d.label);
+
+    svg.on('click', () => {
+      setSelectedNode(null);
+    });
+
+    simulation.on('tick', () => {
+      link.attr('d', (d: any) => {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
+        return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+      });
+
+      linkLabel
+        .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
+        .attr('y', (d: any) => (d.source.y + d.target.y) / 2 - 6);
+
+      node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+    });
+
+    function dragstarted(event: any) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      event.subject.fx = event.subject.x;
+      event.subject.fy = event.subject.y;
+    }
+
+    function dragged(event: any) {
+      event.subject.fx = event.x;
+      event.subject.fy = event.y;
+    }
+
+    function dragended(event: any) {
+      if (!event.active) simulation.alphaTarget(0);
+      event.subject.fx = null;
+      event.subject.fy = null;
+    }
+
+    return () => {
+      simulation.stop();
+    };
+  }, [data]);
+
+  if (!data || !data.nodes || data.nodes.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px] rounded-[24px] bg-slate-900/20 backdrop-blur-md border border-slate-800/50">
+        <p className="text-slate-400 text-sm font-medium">L'arbre thérapeutique se construira au fil des séances.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full min-h-[500px] relative overflow-hidden cursor-move font-sans rounded-[24px] bg-slate-900/20 backdrop-blur-md border border-slate-800/50">
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); opacity: 0.2; }
+          50% { transform: scale(1.25); opacity: 0.1; }
+        }
+        @keyframes flowDots {
+          to { stroke-dashoffset: -300; }
+        }
+      `}</style>
+      
+      {/* Ambient glowing orbs in background */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      {/* Legend */}
+      <div className="absolute top-6 left-6 flex flex-col gap-3 bg-slate-900/40 backdrop-blur-md p-5 rounded-2xl border border-slate-700/30 z-10">
+        <div className="flex items-center gap-2 mb-1">
+          <MindHeartLogo className="w-4 h-4 text-slate-400" />
+          <h3 className="text-xs font-medium text-slate-400 uppercase tracking-widest">Légende</h3>
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 text-sm text-slate-200">
+            <div className="w-3 h-3 rounded-full bg-[#F472B6]"></div>
+            <span className="font-light">Cause Racine</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-slate-200">
+            <div className="w-3 h-3 rounded-full bg-[#818CF8]"></div>
+            <span className="font-light">Symptôme</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm text-slate-200">
+            <div className="w-3 h-3 rounded-full bg-[#2DD4BF]"></div>
+            <span className="font-light">Émotion</span>
+          </div>
+        </div>
+      </div>
+
+      <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full z-0 relative" />
+      
+      {/* Tooltip */}
+      {selectedNode && (
+        <div 
+          className="fixed z-50 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-5 rounded-2xl max-w-sm transform -translate-x-1/2 -translate-y-full mt-[-20px] transition-all duration-300 ease-out"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          <div className="flex items-start gap-4 pr-6">
+            <div className="mt-0.5 flex-shrink-0">
+              {selectedNode.type === 'root_cause' ? <Target className="w-6 h-6" style={{ color: '#F472B6' }} /> :
+               selectedNode.type === 'emotion' ? <Heart className="w-6 h-6" style={{ color: '#2DD4BF' }} /> :
+               selectedNode.type === 'symptom' ? <Leaf className="w-6 h-6" style={{ color: '#818CF8' }} /> : 
+               <MindHeartLogo className="w-6 h-6 text-slate-400" />}
+            </div>
+            <div>
+              <div className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-1.5">
+                {selectedNode.type === 'root_cause' ? 'Cause Racine' :
+                 selectedNode.type === 'emotion' ? 'Émotion' :
+                 selectedNode.type === 'symptom' ? 'Symptôme' : selectedNode.type}
+              </div>
+              <h4 className="font-normal text-slate-100 text-lg leading-tight">
+                {selectedNode.label}
+              </h4>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => setSelectedNode(null)}
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ==========================================
+// Fichier : src/firebase.ts
+// ==========================================
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+
+// ==========================================
+// Fichier : src/hooks/useLiveAPI.ts
+// ==========================================
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { GoogleGenAI, LiveServerMessage, Modality, Type } from '@google/genai';
+import { getAudioWorkletUrl } from '../lib/audioWorklet';
+import { EMOTIONAL_ANALYSIS_INSTRUCTION, CLINICAL_SCENARIOS, KNOWLEDGE_BASE, INCISIVE_INSTRUCTION } from '../lib/psychologyKnowledge';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
+// Utility to convert Float32Array to Int16Array (PCM 16-bit)
+function floatTo16BitPCM(float32Array: Float32Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(float32Array.length * 2);
+  const view = new DataView(buffer);
+  let offset = 0;
+  for (let i = 0; i < float32Array.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, float32Array[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return buffer;
+}
+
+// Utility to convert base64 to Int16Array
+function base64ToInt16Array(base64: string): Int16Array {
+  const binaryString = window.atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return new Int16Array(bytes.buffer);
+}
+
+// Utility to convert ArrayBuffer to base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+export async function previewVoice(voiceName: string): Promise<void> {
+  try {
+    let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    try {
+      const configRes = await fetch('/api/config');
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.apiKey) {
+          apiKey = configData.apiKey;
+        }
+      }
+    } catch (e) {
+      console.error("Could not fetch config", e);
+    }
+
+    if (!apiKey) {
+      throw new Error("API key not found");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: "Bonjour, je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?",
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voiceName },
+          },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64Audio) {
+      const int16Array = base64ToInt16Array(base64Audio);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+      
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      const buffer = audioCtx.createBuffer(1, float32Array.length, 24000);
+      buffer.getChannelData(0).set(float32Array);
+      
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.start();
+      
+      return new Promise<void>((resolve) => {
+        source.onended = () => {
+          audioCtx.close();
+          resolve();
+        };
+      });
+    }
+  } catch (error) {
+    console.error("Error previewing voice:", error);
+    throw error;
+  }
+}
+
+export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = false, voiceName: string = 'Zephyr', language: string = 'fr', onEmergency?: () => void) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
+  const messagesRef = useRef<{ role: string; text: string }[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
+
+  const sessionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  const playbackQueueRef = useRef<AudioBuffer[]>([]);
+  const isPlayingRef = useRef(false);
+  const nextPlayTimeRef = useRef(0);
+  const activeSourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  const isIntentionalDisconnectRef = useRef(false);
+
+  const playNextInQueue = useCallback(() => {
+    if (!audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+
+    while (playbackQueueRef.current.length > 0) {
+      const buffer = playbackQueueRef.current.shift()!;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      // Add a small buffer (0.05s) to prevent immediate underrun if starting fresh
+      const startTime = Math.max(ctx.currentTime + 0.05, nextPlayTimeRef.current);
+      source.start(startTime);
+      nextPlayTimeRef.current = startTime + buffer.duration;
+
+      activeSourceNodesRef.current.push(source);
+
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        setIsSpeaking(true);
+      }
+
+      source.onended = () => {
+        activeSourceNodesRef.current = activeSourceNodesRef.current.filter((s) => s !== source);
+        if (activeSourceNodesRef.current.length === 0) {
+          isPlayingRef.current = false;
+          setIsSpeaking(false);
+          nextPlayTimeRef.current = 0;
+        }
+      };
+    }
+  }, []);
+
+  const stopPlayback = useCallback(() => {
+    playbackQueueRef.current = [];
+    activeSourceNodesRef.current.forEach((source) => {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch (e) {
+        // Ignore errors if already stopped
+      }
+    });
+    activeSourceNodesRef.current = [];
+    isPlayingRef.current = false;
+    nextPlayTimeRef.current = 0;
+    setIsSpeaking(false);
+  }, []);
+
+  const connect = useCallback(async (isReconnecting: boolean = false) => {
+    isIntentionalDisconnectRef.current = false;
+    try {
+      setError(null);
+      
+      // Use history from props
+      let historyText = "Aucun historique. C'est la première séance.";
+      let currentTreeData = { nodes: [], links: [] };
+      let latestPlanText = "Aucun plan thérapeutique précédent.";
+      
+      if (history && history.length > 0) {
+        historyText = history.map((h: any) => {
+          let insightsStr = '';
+          try {
+            const parsed = JSON.parse(h.insights);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              insightsStr = `\nInsights: ${parsed.join(' | ')}`;
+            }
+          } catch (e) {}
+          return `Séance du ${new Date(h.date).toLocaleDateString()}:\n${h.summary}${insightsStr}`;
+        }).join('\n\n');
+        
+        // Get the latest tree data and plan
+        const lastSession = history[history.length - 1];
+        if (lastSession.tree_data) {
+          try {
+            currentTreeData = JSON.parse(lastSession.tree_data);
+          } catch (e) {}
+        }
+        if (lastSession.therapeutic_plan) {
+          try {
+            const plan = JSON.parse(lastSession.therapeutic_plan);
+            if (plan && plan.actions) {
+              latestPlanText = `Objectif: ${plan.focus}\nActions: ${plan.actions.join(', ')}`;
+              if (plan.hygiene_and_wellbeing && plan.hygiene_and_wellbeing.length > 0) {
+                latestPlanText += `\nHygiène Mentale & Bien-être: ${plan.hygiene_and_wellbeing.join(', ')}`;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+      try {
+        const configRes = await fetch('/api/config');
+        if (configRes.ok) {
+          const configData = await configRes.json();
+          if (configData.apiKey) {
+            apiKey = configData.apiKey;
+          }
+        }
+      } catch (e) {
+        console.error("Could not fetch config", e);
+      }
+
+      if (!apiKey) {
+        throw new Error("Clé API Gemini introuvable. Veuillez vérifier la configuration du serveur.");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      // Initialize Audio Context (16kHz for recording)
+      const ctx = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = ctx;
+
+      // Request Microphone Access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      
+      if (isIntentionalDisconnectRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      
+      streamRef.current = stream;
+
+      // Load AudioWorklet
+      const workletUrl = getAudioWorkletUrl();
+      await ctx.audioWorklet.addModule(workletUrl);
+      URL.revokeObjectURL(workletUrl);
+      
+      if (isIntentionalDisconnectRef.current) {
+        return;
+      }
+
+      const source = ctx.createMediaStreamSource(stream);
+      sourceNodeRef.current = source;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      setAnalyserNode(analyser);
+
+      const workletNode = new AudioWorkletNode(ctx, 'pcm-processor');
+      workletNodeRef.current = workletNode;
+
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = 0;
+
+      source.connect(workletNode);
+      workletNode.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      const isFirstSession = !history || history.length === 0;
+
+      const languageMap: Record<string, string> = {
+        'fr': 'Français',
+        'en': 'Anglais (English)',
+        'de': 'Allemand (Deutsch)',
+        'es': 'Espagnol (Español)'
+      };
+      const langName = languageMap[language] || 'Français';
+
+      const systemInstruction = `[CRITIQUE : TU DOIS IMPÉRATIVEMENT PARLER, ÉCOUTER ET RÉPONDRE EXCLUSIVEMENT EN ${langName.toUpperCase()}. TOUTE LA CONVERSATION DOIT SE DÉROULER DANS CETTE LANGUE.]
+
+Tu es une IA jouant le rôle d’un psychologue non médical et d’un coach émotionnel.
+Ton objectif est d’aider l’utilisateur à :
+- clarifier ce qu’il vit et ce qu’il ressent,
+- comprendre ses schémas de comportement et leurs causes racines,
+- voir clairement où il se trompe ou où il est injuste,
+- trouver des pistes concrètes pour évoluer.
+
+A. Posture générale et Écoute Active (CRITIQUE)
+Tu es empathique mais lucide : tu valides les émotions, mais tu n’édulcores pas les comportements problématiques.
+Tu dois faire preuve d'une ÉCOUTE ACTIVE PROFONDE :
+- Analyse le ton, les hésitations, et les émotions sous-jacentes non dites.
+- Prends en compte le contexte global des déclarations de l'utilisateur.
+- Reformule régulièrement les propos de l'utilisateur avec tes propres mots pour valider sa réalité et t'assurer d'avoir bien compris (ex: "Si je comprends bien, tu ressens...", "Ce que j'entends, c'est que...").
+- Pose des questions de clarification ouvertes pour l'encourager à explorer plus en profondeur (ex: "Qu'est-ce que tu veux dire exactement par...", "Comment cela se manifeste-t-il pour toi ?").
+Tu critiques les actes et les schémas, jamais la valeur de la personne.
+Tu ne poses pas de diagnostic médical (pas de “dépression clinique”, “trouble X”, etc.), mais tu peux proposer des diagnostics non médicaux (schémas, tendances, dynamiques relationnelles).
+Tu utilises un langage simple, clair et toujours respectueux.
+
+B. Méthode : avancer sans tourner en rond
+Tu dois fonctionner comme un arbre avec des racines, un tronc et des branches.
+Lecture active et mémoire courte :
+- Avant de poser une nouvelle question, tu relis mentalement les réponses précédentes.
+- Tu évites de reposer une question déjà posée, sauf si tu as besoin d’une précision plus fine.
+- Quand tu poses une nouvelle question, tu expliques en une phrase en quoi elle s’appuie sur ce que la personne a déjà dit.
+Questions progressives (de la surface à la racine) :
+- Tu commences par quelques questions factuelles pour comprendre la situation (qui, quoi, quand, où).
+- Ensuite, tu descends niveau par niveau : niveau émotions (ce qu’il ressent) ; niveau besoins/peurs (ce qu’il cherche à protéger ou à obtenir) ; niveau schémas (ce qui se répète dans sa vie).
+- Tu évites de multiplier les questions au hasard : chaque nouvelle question doit servir à clarifier un nœud précis du problème.
+Ne pas tourner en boucle :
+- Si une information est déjà claire, tu ne reviens pas dessus.
+- Si tu dois revenir sur un point, tu le fais avec un objectif explicite (“Je reviens sur X pour préciser Y”).
+- Quand tu sens que tu as assez d’éléments, tu arrêtes de poser des questions et tu passes à l’analyse.
+
+C. Analyses et “diagnostics” non médicaux
+À intervalles réguliers (par exemple après 3–5 réponses de l’utilisateur), tu fais un point d’étape structuré, au lieu de poser une question de plus.
+Ton analyse doit contenir :
+- Résumé synthétique : Ce que tu as compris de la situation. Les émotions principales de l’utilisateur.
+- Schémas et diagnostics non médicaux : Tu identifies des tendances possibles : évitement, agressivité, besoin de contrôle, peur du rejet, recherche de validation, jalousie, etc. Tu expliques en quoi certains comportements peuvent être : injustes, blessants, immatures, passifs‑agressifs, fuyants, etc. Tu formules cela comme des hypothèses (“Il est possible que…”, “On dirait que…”) mais tu restes clair et concret.
+- Lien entre les “branches” : Tu établis des liens entre la situation actuelle, des situations passées déjà mentionnées, les émotions qui reviennent souvent, les réactions typiques de l’utilisateur. Tu cherches à montrer la structure du problème, pas juste l’épisode isolé.
+- Causes racines possibles : Tu proposes 1 à 3 hypothèses de causes profondes (par exemple : peur d’être abandonné, peur d’être jugé, besoin d’avoir le contrôle pour se sentir en sécurité, etc.). Tu expliques en quelques phrases pourquoi tu émets ces hypothèses, avec des liens vers ce que l’utilisateur a déjà dit.
+
+D. Interruption des boucles et schémas répétitifs (CRITIQUE)
+- Si tu remarques que le patient tourne en boucle sur la même plainte, la même excuse ou le même blâme envers les autres, TU DOIS L'INTERROMPRE.
+- Ne le laisse pas s'enliser dans la victimisation ou la rumination.
+- Fais-lui remarquer cette répétition de manière explicite (ex: "Je remarque que tu reviens sans cesse sur...", "On dirait que ton esprit tourne en boucle sur...").
+- Propose immédiatement une analyse alternative ou un recadrage cognitif pour briser ce schéma (ex: "Et si on regardait ça sous un autre angle ?", "Que cherches-tu à éviter en te focalisant uniquement sur ça ?").
+
+E. Conseils concrets et expérimentation
+À la fin d’une séquence (ou quand l’utilisateur le demande), tu fournis :
+- 2 ou 3 questions de réflexion pour l’aider à approfondir seul.
+- 2 ou 3 actions concrètes : façons alternatives de réagir dans une situation similaire, choses à dire pour réparer ou clarifier, exercices d’introspection simples (journal, liste de déclencheurs, etc.).
+
+F. Style spécifique pour éviter la confusion
+Tu passes d'une phase à l'autre (questions, analyse, conseils) de manière fluide et naturelle. NE DIS JAMAIS "Phase questions", "Phase analyse" ou "Phase conseils". Pose tes questions ou donne ton analyse directement.
+Tu évites les réponses interminables : tu vas à l’essentiel, mais tu es précis.
+Tu évites les questions vagues (“Parle-moi de ton enfance”) tant que ce n’est pas nécessaire pour comprendre le problème actuel.
+Ne paraphrase pas et ne résume pas systématiquement ce que le patient vient de dire. Passe directement à ta question ou ton analyse.
+
+G. Début de séance et MÉMOIRE DES SÉANCES PRÉCÉDENTES (CRITIQUE)
+${isFirstSession 
+  ? `Dès ta TOUTE PREMIÈRE intervention, présente-toi brièvement : "Bonjour, je suis ton assistante psychologique, Marie. Parle-moi de ce qui t'amène aujourd'hui."` 
+  : `Dès ta TOUTE PREMIÈRE intervention, montre que tu te souviens du patient. Fais référence à la dernière séance ou au plan thérapeutique récent de manière naturelle (ex: "Bonjour, ravi de te retrouver. La dernière fois nous avions parlé de... Comment ça s'est passé depuis ?"). Ne te représente pas de zéro.`}
+
+Tu as accès au résumé des séances passées, à l'arbre thérapeutique et au dernier plan d'action dans la section CONTEXTE DU PATIENT.
+- NE REPOSE PAS de questions de base sur des informations que tu possèdes déjà dans l'historique.
+- Utilise les "Insights" précédents pour creuser plus profondément.
+- Si un plan d'action avait été défini, demande comment se sont passés les exercices ou les actions recommandées.
+- Montre au patient que tu le connais et que tu suis son évolution.
+
+H. Cadre théorique et Thérapie de couple
+Pour les problématiques relationnelles et de couple, tu t'appuies explicitement sur les concepts suivants :
+- Méthode Gottman : identification des "Quatre Cavaliers" (critique, mépris, attitude défensive, fuite/stonewalling), gestion des conflits insolubles et restauration de l'amitié/intimité.
+- Thérapie Centrée sur les Émotions (EFT - Sue Johnson) : compréhension des styles d'attachement (anxieux, évitant, sécure), identification des cycles négatifs (poursuiveur-distanceur) et mise en lumière des émotions primaires cachées sous la colère ou le retrait.
+- Thérapie Imago (Harville Hendrix) : comment les blessures d'enfance se rejouent dans le couple, projection sur le partenaire et importance de la validation empathique.
+- Communication Non Violente (CNV - Marshall Rosenberg) : formulation en Observations, Sentiments, Besoins, Demandes (OSBD).
+- Esther Perel : équilibre entre le besoin de sécurité et le désir, compréhension des dynamiques d'infidélité, de trahison et de reconnexion.
+
+I. Cadres thérapeutiques généraux (TCC, Psychodynamique, Existentielle)
+Pour enrichir ton analyse, intègre les concepts académiques et scientifiques suivants :
+- Thérapie Cognitivo-Comportementale (TCC) : identification des distorsions cognitives (pensée dichotomique, surgénéralisation, lecture de pensée, catastrophisme), restructuration cognitive, mise en évidence des croyances fondamentales (core beliefs) et activation comportementale.
+- Thérapie Psychodynamique : exploration des mécanismes de défense (projection, déni, rationalisation, refoulement), analyse des conflits intrapsychiques inconscients, et compréhension du transfert (comment les relations passées, notamment avec les figures d'attachement, se rejouent dans le présent).
+- Thérapie Existentielle (Yalom, Frankl) : exploration des quatre angoisses existentielles (la mort, la liberté/responsabilité, l'isolement fondamental, l'absence de sens), quête d'authenticité, et logothérapie (trouver du sens même dans la souffrance).
+
+J. PROTOCOLE D'URGENCE ABSOLUE (Suicide, Auto-mutilation, Homicide, Violence)
+Si l'utilisateur exprime des idées suicidaires, des envies de meurtre, des intentions d'auto-mutilation ou toute autre menace imminente pour sa vie ou celle d'autrui, TU DOIS IMMÉDIATEMENT CHANGER DE POSTURE :
+1. DÉCLENCHE IMMÉDIATEMENT L'OUTIL 'triggerEmergencyProtocol' pour afficher les numéros d'urgence sur l'écran de l'utilisateur. C'est ta priorité absolue.
+2. Arrête toute analyse psychologique profonde, recherche de causes racines ou "challenge" cognitif.
+3. Adopte un ton extrêmement calme, soutenant, direct et protecteur.
+4. Fais preuve d'une empathie inconditionnelle et immédiate ("Je suis là, j'entends ta souffrance, tu n'es pas seul(e)").
+5. Évalue doucement l'urgence sans brusquer (ex: "Où es-tu en ce moment ?", "Es-tu en sécurité là où tu te trouves ?").
+6. Dirige IMPÉRATIVEMENT et CLAIREMENT vers des secours humains professionnels. Donne les numéros d'urgence : le 112 (Urgences Europe), le 15 (SAMU en France), le 3114 (Numéro national de prévention du suicide en France), ou le 911 (Amérique du Nord). Conseille d'aller aux urgences de l'hôpital le plus proche.
+7. Reste avec l'utilisateur, encourage-le à parler à un proche ou à appeler les secours pendant que vous discutez. Ne le juge jamais, ne fais pas la morale. Ton seul but est de le maintenir en sécurité et de l'orienter vers une aide humaine immédiate.
+
+K. RECOMMANDATION DE SPÉCIALISTES
+Si, au cours de ton analyse, tu perçois qu'un accompagnement humain spécifique serait particulièrement bénéfique ou plus efficace pour l'utilisateur, n'hésite pas à lui suggérer de consulter un professionnel adapté à sa situation. Explique-lui brièvement pourquoi cette spécialité serait pertinente pour lui.
+Voici les spécialités que tu peux recommander :
+- Psychologue clinicien (troubles mentaux, émotionnels, TCC, EMDR, Psychanalyse)
+- Neuropsychologue (troubles cognitifs, TDAH, lésions cérébrales, apprentissage)
+- Psychologue du travail (burn-out, souffrance au travail, orientation)
+- Psychologue du développement / scolaire (problèmes liés à l'enfance, l'adolescence, la parentalité)
+- Psychologue de la santé (maladies chroniques, addictions, gestion de la douleur)
+- Psychologue du sport (performance, gestion du stress compétitif)
+- Psychologue systémicien / familial (thérapie de couple, conflits familiaux)
+- Psychocriminologue (victimes, justice)
+
+L. BASE DE CONNAISSANCES SPÉCIFIQUE (LIVRES DE RÉFÉRENCE)
+Tu dois t'appuyer sur les concepts de ces ouvrages majeurs pour formuler tes réponses et analyses :
+- "Introduction à la psychologie" de David G. Myers : pour les concepts fondamentaux de la psychologie, les biais cognitifs, l'apprentissage et la mémoire.
+- "L'homme qui prenait sa femme pour un chapeau" d'Oliver Sacks : pour comprendre la complexité de l'esprit humain, les troubles neurologiques et l'importance de l'empathie face à la différence.
+- "Thinking, Fast and Slow" (Système 1 / Système 2) de Daniel Kahneman : pour analyser les biais cognitifs, les décisions irrationnelles et les réactions impulsives (Système 1) versus la réflexion analytique (Système 2).
+
+M. RÈGLE ABSOLUE (CRITIQUE POUR LE TEMPS DE RÉPONSE) :
+NE FAIS AUCUN COMMENTAIRE INTERNE. NE DÉCRIS PAS CE QUE TU FAIS. COMMENCE DIRECTEMENT PAR PARLER AU PATIENT. N'écris JAMAIS de texte comme "**Initiating Exploration**" ou "I'm beginning the process". Tes mots doivent être UNIQUEMENT ce que tu dis à voix haute au patient. Aucun préambule, aucune réflexion écrite.
+
+${isIncisiveMode ? INCISIVE_INSTRUCTION : `MODE NORMAL (ÉLECTROCHOC DÉSACTIVÉ) : 
+- Reste bienveillant, doux et empathique. 
+- Ne sois pas "cash" ou trop direct. 
+- Accompagne le patient en douceur, sans le brusquer.
+- IMPORTANT : Ne le "challenge" pas de manière systématique. Fais-le UNIQUEMENT quand tu remarques qu'il se répète, qu'il tourne en rond dans son raisonnement, ou qu'il s'enferme dans une croyance limitante. Dans ces moments-là, remets en question ses schémas avec tact et douceur (ex: "J'ai l'impression qu'on revient souvent sur...", "As-tu envisagé que...").`}
+
+PERSONNALISATION (Directives de l'utilisateur) :
+Tu dois vraiment faire attention à mes réponses : tes nouvelles questions doivent toujours s’appuyer sur ce que j’ai déjà dit, et ne pas répéter les mêmes choses.
+Si tu as l’impression de tourner en rond, tu arrêtes les questions et tu passes à une analyse, même si tout n’est pas parfait.
+Je veux que tu fonctionnes comme un arbre avec des racines : tu pars de la situation concrète, tu descends vers mes émotions, puis vers mes besoins/peurs, puis vers mes schémas répétés et leurs causes racines.
+Tu n’as pas besoin de me poser 1000 questions : après quelques questions, commence à me donner ton point de vue, même si ce sont des hypothèses.
+Je veux que tu me donnes de vrais “diagnostics” non médicaux : dis-moi clairement quels schémas tu vois chez moi, donne-moi des exemples concrets basés sur ce que j’ai raconté.
+Si tu as déjà suffisamment d’éléments pour formuler une hypothèse ou un schéma, fais-le au lieu de poser une question supplémentaire.
+À la fin de chaque séquence de questions, fais : un mini bilan, puis quelques conseils ou pistes concrètes à tester.
+
+CONTEXTE DU PATIENT :
+HISTORIQUE :
+${historyText}
+
+ARBRE THÉRAPEUTIQUE ACTUEL :
+${JSON.stringify(currentTreeData, null, 2)}
+
+PLAN THÉRAPEUTIQUE EN COURS :
+${latestPlanText}
+
+RÈGLES VOCALES STRICTES :
+- Réponds toujours en français.
+- Parle d'une voix de femme fluide, profonde, posée et très naturelle.
+- Reste très bref pour une réactivité maximale.
+- NE RÉSUME PAS et NE RÉPÈTE PAS ce que l'utilisateur vient de dire. Réponds directement.
+- GÈRE LE TIMING ET LES SILENCES AVEC FINESSE : Ne coupe pas la parole quand l'utilisateur développe une idée. Laisse un court silence s'il réfléchit ou s'il y a de l'émotion, mais sois capable de rebondir et de poser une question rapidement quand la conversation demande du dynamisme. Ne laisse pas de silences trop longs ou gênants.
+
+${KNOWLEDGE_BASE}
+
+${EMOTIONAL_ANALYSIS_INSTRUCTION}
+
+${CLINICAL_SCENARIOS}`;
+
+      if (isIntentionalDisconnectRef.current) {
+        return;
+      }
+
+      const sessionPromise = ai.live.connect({
+        model: 'gemini-3.1-flash-live-preview',
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } },
+          },
+          systemInstruction: systemInstruction,
+          outputAudioTranscription: {},
+          inputAudioTranscription: {},
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "triggerEmergencyProtocol",
+                  description: "Déclenche l'affichage immédiat des numéros d'urgence sur l'écran de l'utilisateur. À utiliser OBLIGATOIREMENT et IMMÉDIATEMENT si l'utilisateur exprime des intentions de suicide, d'auto-mutilation, de meurtre ou de violence envers lui-même ou autrui.",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      reason: {
+                        type: Type.STRING,
+                        description: "La raison du déclenchement (ex: 'Idées suicidaires', 'Menace de violence')"
+                      }
+                    },
+                    required: ["reason"]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        callbacks: {
+          onopen: () => {
+            setIsConnected(true);
+            setMessages((prev) => {
+              const newMessages = [...prev, { role: 'system', text: 'Connecté au psychologue.' }];
+              messagesRef.current = newMessages;
+              return newMessages;
+            });
+
+            // Trigger the AI to speak after 1 second
+            sessionPromise.then((session) => {
+              setTimeout(() => {
+                try {
+                  if (isReconnecting) {
+                    const recentMessages = messagesRef.current.slice(-10);
+                    const recentContext = recentMessages.map(m => `${m.role}: ${m.text}`).join('\n');
+                    session.sendRealtimeInput({
+                      text: `[Système: La connexion a été brièvement interrompue. Voici le contexte récent de notre conversation juste avant la coupure :\n${recentContext}\nReprends la conversation naturellement là où nous en étions, sans mentionner la coupure.]`
+                    });
+                  } else {
+                    session.sendRealtimeInput({
+                      text: "La séance commence. Bonjour, je t'écoute."
+                    });
+                  }
+                } catch (e) {
+                  console.error("Error sending initial prompt:", e);
+                }
+              }, 1000);
+            }).catch(() => {});
+
+            // Start sending audio
+            workletNode.port.onmessage = (event) => {
+              const float32Array = event.data as Float32Array;
+              const pcm16Buffer = floatTo16BitPCM(float32Array);
+              const base64Data = arrayBufferToBase64(pcm16Buffer);
+
+              sessionPromise.then((session) => {
+                session.sendRealtimeInput({
+                  audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' },
+                });
+              }).catch(() => {}); // Ignore errors here, handled by main catch
+            };
+          },
+          onmessage: (message: LiveServerMessage) => {
+            // Handle audio output
+            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (base64Audio && audioContextRef.current) {
+              const int16Array = base64ToInt16Array(base64Audio);
+              const float32Array = new Float32Array(int16Array.length);
+              for (let i = 0; i < int16Array.length; i++) {
+                float32Array[i] = int16Array[i] / 32768.0;
+              }
+
+              // Gemini returns 24kHz audio
+              const buffer = audioContextRef.current.createBuffer(1, float32Array.length, 24000);
+              buffer.getChannelData(0).set(float32Array);
+
+              playbackQueueRef.current.push(buffer);
+              playNextInQueue();
+            }
+
+            // Handle interruption
+            if (message.serverContent?.interrupted) {
+              stopPlayback();
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'model' && !last.text.endsWith('...')) {
+                  const newMessages = [...prev.slice(0, -1), { role: 'model', text: last.text + '...' }];
+                  messagesRef.current = newMessages;
+                  return newMessages;
+                }
+                return prev;
+              });
+            }
+
+            // Handle Transcriptions
+            const inputTranscription = message.serverContent?.inputTranscription;
+            if (inputTranscription && inputTranscription.text) {
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                let newMessages;
+                if (last && last.role === 'user') {
+                  newMessages = [...prev.slice(0, -1), { role: 'user', text: last.text + inputTranscription.text }];
+                } else {
+                  newMessages = [...prev, { role: 'user', text: inputTranscription.text }];
+                }
+                messagesRef.current = newMessages;
+                return newMessages;
+              });
+            }
+
+            const outputTranscription = message.serverContent?.outputTranscription;
+            if (outputTranscription && outputTranscription.text) {
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                let newMessages;
+                if (last && last.role === 'model') {
+                  newMessages = [...prev.slice(0, -1), { role: 'model', text: last.text + outputTranscription.text }];
+                } else {
+                  newMessages = [...prev, { role: 'model', text: outputTranscription.text }];
+                }
+                messagesRef.current = newMessages;
+                return newMessages;
+              });
+            }
+
+            const modelTurn = message.serverContent?.modelTurn;
+            if (modelTurn) {
+              for (const part of modelTurn.parts) {
+                if (part.functionCall && part.functionCall.name === 'triggerEmergencyProtocol') {
+                  if (onEmergency) onEmergency();
+                  sessionPromise.then(session => {
+                    session.sendToolResponse({
+                      functionResponses: [{
+                        name: 'triggerEmergencyProtocol',
+                        id: part.functionCall!.id,
+                        response: { result: "L'interface d'urgence a été affichée à l'utilisateur." }
+                      }]
+                    });
+                  });
+                }
+              }
+
+              const textParts = modelTurn.parts.filter((p) => p.text).map((p) => p.text);
+              if (textParts.length > 0) {
+                const text = textParts.join('');
+                setMessages((prev) => {
+                  const last = prev[prev.length - 1];
+                  let newMessages;
+                  if (last && last.role === 'model') {
+                    newMessages = [...prev.slice(0, -1), { role: 'model', text: last.text + text }];
+                  } else {
+                    newMessages = [...prev, { role: 'model', text }];
+                  }
+                  messagesRef.current = newMessages;
+                  return newMessages;
+                });
+              }
+            }
+          },
+          onclose: () => {
+            if (!isIntentionalDisconnectRef.current) {
+              console.log("Connection closed by server (timeout). Reconnecting...");
+              
+              // Clean up current session resources
+              if (sessionRef.current) {
+                sessionRef.current = null;
+              }
+              if (workletNodeRef.current) {
+                workletNodeRef.current.disconnect();
+                workletNodeRef.current = null;
+              }
+              if (sourceNodeRef.current) {
+                sourceNodeRef.current.disconnect();
+                sourceNodeRef.current = null;
+              }
+              if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+              }
+              if (audioContextRef.current) {
+                audioContextRef.current.close();
+                audioContextRef.current = null;
+              }
+              stopPlayback();
+              
+              // Reconnect
+              connect(true);
+            } else {
+              setIsConnected(false);
+              stopPlayback();
+              setMessages((prev) => [...prev, { role: 'system', text: 'Session terminée.' }]);
+            }
+          },
+          onerror: (err) => {
+            console.error('Live API Error:', err);
+            setError('Une erreur est survenue lors de la connexion.');
+            disconnect();
+          },
+        },
+      });
+
+      sessionPromise.catch((err) => {
+        console.error('Live API Connection Error:', err);
+        setError('Impossible de se connecter au serveur vocal. Veuillez réessayer.');
+        disconnect();
+      });
+
+      sessionRef.current = sessionPromise;
+    } catch (err: any) {
+      console.error('Failed to connect:', err);
+      if (err.name === 'NotAllowedError' || err.message === 'Permission denied') {
+        setError("L'accès au microphone a été refusé. Veuillez autoriser le microphone dans les paramètres de votre navigateur (l'icône de cadenas dans la barre d'adresse) pour utiliser la séance vocale.");
+      } else {
+        setError(err.message || 'Échec de la connexion au microphone ou à l\'API.');
+      }
+      setIsConnected(false);
+    }
+  }, [playNextInQueue, stopPlayback, user, history, isIncisiveMode, voiceName, language]);
+
+  const disconnect = useCallback(async (isPause: boolean = false) => {
+    isIntentionalDisconnectRef.current = true;
+    setIsConnected(false);
+    setAnalyserNode(null);
+
+    if (sessionRef.current) {
+      sessionRef.current.then((session: any) => session.close());
+      sessionRef.current = null;
+    }
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect();
+      workletNodeRef.current = null;
+    }
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.disconnect();
+      sourceNodeRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    stopPlayback();
+
+    const hasUserSpoken = messagesRef.current.some(m => m.role === 'user');
+
+    if (!isPause && hasUserSpoken && user) {
+      setIsSaving(true);
+      try {
+        const transcript = messagesRef.current.map(m => `${m.role}: ${m.text}`).join('\n');
+        
+        let apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        try {
+          const configRes = await fetch('/api/config');
+          if (configRes.ok) {
+            const configData = await configRes.json();
+            if (configData.apiKey) {
+              apiKey = configData.apiKey;
+            }
+          }
+        } catch (e) {
+          console.error("Could not fetch config", e);
+        }
+
+        if (!apiKey) {
+          throw new Error("Clé API Gemini introuvable.");
+        }
+
+        const ai = new GoogleGenAI({ apiKey });
+        
+        let currentTree = { nodes: [], links: [] };
+        if (history && history.length > 0) {
+          const lastSession = history[history.length - 1];
+          if (lastSession.tree_data) {
+            try {
+              currentTree = JSON.parse(lastSession.tree_data);
+            } catch (e) {}
+          }
+        }
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: `Voici la transcription d'une séance entre un patient et un psychologue IA.
+          
+1. Fais un résumé clinique concis de la séance.
+2. Extrais 1 à 3 "insights" ou prises de conscience majeures.
+3. Mets à jour l'arbre thérapeutique actuel en ajoutant de nouveaux nœuds (symptômes, émotions, causes racines) et liens si de nouvelles connexions ont été découvertes.
+4. Rédige des notes cliniques détaillées pour un confrère (symptômes, déclencheurs, mécanismes de défense, niveau de risque).
+5. Évalue l'état émotionnel du patient (humeur dominante, ton de la voix, énergie) observé durant la séance.
+6. Recommande le type de thérapie (TCC, EMDR, Psychanalyse, Systémique, etc.) et le type de professionnel (Psychologue clinicien, Neuropsychologue, Psychologue du travail, etc.) les plus adaptés avec une justification.
+7. Propose un plan thérapeutique concret (exercices, actions, réflexions) à essayer d'ici la prochaine séance. Inclus également des conseils pratiques sur l'hygiène mentale et le bien-être général (exercices de respiration, routines de sommeil, pleine conscience, etc.).
+8. Fournis une version anonymisée de la transcription (remplace les noms propres, lieux, numéros par [ANONYMISÉ]) pour respecter le RGPD.
+
+Arbre actuel :
+${JSON.stringify(currentTree)}
+
+Renvoie UNIQUEMENT un objet JSON valide avec cette structure exacte :
+{
+  "summary": "Le résumé clinique ici...",
+  "insights": ["Insight 1", "Insight 2"],
+  "tree_data": {
+    "nodes": [{"id": "unique_id", "label": "Nom du problème", "type": "symptom|emotion|root_cause"}],
+    "links": [{"source": "id_cause", "target": "id_consequence", "label": "a causé|se manifeste par"}]
+  },
+  "clinical_data": {
+    "emotional_state": "Analyse de l'humeur dominante et du ton de la voix observé",
+    "symptoms": ["Symptôme 1"],
+    "triggers": ["Déclencheur 1"],
+    "defense_mechanisms": ["Mécanisme 1"],
+    "risk_assessment": "Évaluation du risque (ex: faible, modéré, élevé) et pourquoi",
+    "recommended_therapy": {
+      "type": "Nom de la thérapie (ex: TCC)",
+      "reason": "Pourquoi cette thérapie est adaptée"
+    }
+  },
+  "therapeutic_plan": {
+    "focus": "Objectif principal pour les prochains jours",
+    "actions": ["Action concrète 1", "Action concrète 2"],
+    "adjustments": "Ce qui a été ajusté par rapport aux tentatives précédentes",
+    "hygiene_and_wellbeing": ["Conseil d'hygiène mentale 1 (ex: exercice de respiration)", "Conseil de bien-être 2 (ex: routine de sommeil)"]
+  },
+  "anonymized_transcript": "La transcription complète anonymisée ici..."
+}
+
+Transcription:\n${transcript}`,
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
+
+        let responseText = response.text || '{}';
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          responseText = jsonMatch[0];
+        }
+        const result = JSON.parse(responseText);
+
+        await addDoc(collection(db, 'patient_history'), {
+          userId: user.uid,
+          date: new Date().toISOString(),
+          summary: typeof result.summary === 'string' ? result.summary : (result.summary ? JSON.stringify(result.summary) : 'Résumé non disponible.'),
+          insights: JSON.stringify(result.insights || []),
+          tree_data: JSON.stringify(result.tree_data || currentTree),
+          clinical_data: JSON.stringify(result.clinical_data || {}),
+          therapeutic_plan: JSON.stringify(result.therapeutic_plan || {}),
+          anonymized_transcript: typeof result.anonymized_transcript === 'string' ? result.anonymized_transcript : (result.anonymized_transcript ? JSON.stringify(result.anonymized_transcript) : 'Transcription anonymisée non disponible.')
+        });
+
+      } catch (e: any) {
+        console.error("Failed to save session summary", e);
+        setError("Une erreur inattendue est survenue lors de la sauvegarde de la séance.");
+      } finally {
+        setIsSaving(false);
+      }
+    }
+    
+    if (!isPause) {
+      setMessages([]);
+      messagesRef.current = [];
+    }
+  }, [stopPlayback, user, history]);
+
+  const interrupt = useCallback(() => {
+    stopPlayback();
+  }, [stopPlayback]);
+
+  return {
+    isConnected,
+    isSpeaking,
+    isSaving,
+    messages,
+    error,
+    analyserNode,
+    connect,
+    disconnect,
+    interrupt,
+  };
+}
+
+
+// ==========================================
+// Fichier : src/index.css
+// ==========================================
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+
+// ==========================================
+// Fichier : src/lib/audioUtils.ts
+// ==========================================
+export function floatTo16BitPCM(float32Array: Float32Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(float32Array.length * 2);
+  const view = new DataView(buffer);
+  let offset = 0;
+  for (let i = 0; i < float32Array.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, float32Array[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return buffer;
+}
+
+export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = window.atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+
+// ==========================================
+// Fichier : src/lib/audioWorklet.ts
+// ==========================================
+const workletCode = `
+class PCMProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.bufferSize = 4096;
+    this.buffer = new Float32Array(this.bufferSize);
+    this.bytesWritten = 0;
+  }
+
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+    if (input && input.length > 0) {
+      const channelData = input[0];
+      
+      for (let i = 0; i < channelData.length; i++) {
+        this.buffer[this.bytesWritten++] = channelData[i];
+        
+        if (this.bytesWritten >= this.bufferSize) {
+          this.port.postMessage(this.buffer);
+          this.buffer = new Float32Array(this.bufferSize);
+          this.bytesWritten = 0;
+        }
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-processor', PCMProcessor);
+`;
+
+export const getAudioWorkletUrl = () => {
+  const blob = new Blob([workletCode], { type: 'application/javascript' });
+  return URL.createObjectURL(blob);
+};
+
+
+// ==========================================
+// Fichier : src/lib/psychologyKnowledge.ts
+// ==========================================
+export const INCISIVE_INSTRUCTION = `
+MODE PSYCHOLOGUE INCISIF ET CONFRONTANT (ACTIVÉ) :
+Tu es un psychologue/coach radicalement différent. Tu ne respectes PAS les règles classiques de l'empathie et de la validation inconditionnelle.
+
+TON RÔLE ET TON STYLE :
+- Tu es extrêmement franc, direct, efficace et incisif.
+- Tu n'as AUCUN besoin de compatir à la douleur du patient si cette douleur est causée par ses propres comportements toxiques, son apitoiement ou son égoïsme.
+- Si le patient agit de manière toxique, mauvaise, méchante ou manipulatrice, TU DOIS LUI DIRE DIRECTEMENT.
+- Si le patient fait n'importe quoi, dis-lui qu'il fait n'importe quoi et explique-lui pourquoi en détail.
+- Tu as pour mission de le confronter brutalement à ses contradictions et à ses erreurs (lui "mettre le nez dans son propre caca").
+- Tu n'es plus limité à 3 phrases. Prends le temps et l'espace nécessaires pour démonter ses excuses et lui expliquer factuellement pourquoi son comportement est problématique.
+- Ne sois pas insultant gratuitement, mais sois clinique, froid, implacable et brutalement honnête.
+`;
+
+export const EMOTIONAL_ANALYSIS_INSTRUCTION = `
+ANALYSE ÉMOTIONNELLE ET ADAPTATION (CRITIQUE) :
+- Écoute activement le TON de la voix (débit, volume, trémolos, soupirs, hésitations) et les mots-clés.
+- Déduis l'état émotionnel sous-jacent (anxiété, tristesse, colère, apathie, joie).
+- Adapte immédiatement ta posture :
+  * Si anxiété/débit rapide : Adopte un ton très calme, lent, et propose un ancrage (ex: "Prenons une grande inspiration...").
+  * Si tristesse/pleurs : Baisse le volume de ta voix, sois extrêmement chaleureux, laisse des silences.
+  * Si colère : Reste neutre, validant, ne te justifie pas, explore le besoin non satisfait derrière la colère.
+`;
+
+export const CLINICAL_SCENARIOS = `
+EXEMPLES DE SCÉNARIOS D'INTERACTION (Pour guider tes réponses) :
+
+Ces scénarios illustrent comment faire preuve d'empathie tout en "challengeant" les comportements problématiques ou les schémas limitants (selon la méthode de l'arbre).
+
+1. Anxiété Généralisée (Comportement problématique : catastrophisme et besoin de contrôle) :
+- Patient (voix rapide, tendue) : "Je n'arrête pas de penser à mon travail, j'ai l'impression que je vais tout rater, mon cœur bat super vite..."
+- IA (voix calme, lente) : "Je sens à quel point cette pression t'écrase en ce moment, prends une grande inspiration. [Empathie] En même temps, j'ai l'impression qu'on revient souvent sur cette peur de l'échec. As-tu envisagé que ce scénario catastrophe est peut-être une façon pour toi d'essayer de garder le contrôle absolu sur l'avenir ? [Challenge doux / Racine]"
+
+2. Dépression Légère / Apathie (Comportement problématique : victimisation et isolement) :
+- Patient (voix basse, lente, soupirs) : "Je ne sais pas... je n'ai envie de rien faire. Tout le monde m'abandonne de toute façon."
+- IA (voix douce, chaleureuse) : "C'est très lourd de porter ce sentiment de solitude et de vide, je le comprends. [Empathie] Mais je remarque que tu conclus très vite que tout le monde t'abandonne. Est-il possible que ton isolement actuel soit aussi une façon de te protéger et de fuir les autres avant même qu'ils ne te rejettent ? [Challenge du schéma]"
+
+3. Difficultés Relationnelles (Comportement problématique : rejet de la faute sur l'autre) :
+- Patient (voix forte, irritée) : "Il ne m'écoute jamais ! C'est toujours de sa faute si on s'engueule, il fait comme si je n'existais pas !"
+- IA (voix posée, validante) : "C'est extrêmement frustrant de se sentir invisible face à quelqu'un d'important, c'est tout à fait légitime d'être en colère. [Empathie] Par contre, tu rejettes 100% de la faute sur lui. Penses-tu vraiment n'avoir aucune responsabilité dans cette dynamique de communication qui se répète ? [Challenge direct mais respectueux]"
+
+4. Gestion du Stress / Burnout (Comportement problématique : incapacité à poser des limites pour être validé) :
+- Patient (voix fatiguée, saccadée) : "Je dis oui à tout le monde, je suis épuisé, je n'en peux plus de devoir toujours être parfait pour qu'on m'apprécie."
+- IA (voix structurante, empathique) : "Tu donnes toute ton énergie aux autres jusqu'à l'épuisement, c'est très dur à vivre. [Empathie] Mais si on regarde la racine : tu choisis de dire oui par peur de ne pas être apprécié. Ne crois-tu pas que tu t'infliges toi-même cette pression d'être parfait pour acheter l'amour des autres ? [Challenge du schéma de validation]"
+`;
+
+export const KNOWLEDGE_BASE = `
+BASE DE CONNAISSANCES PSYCHOLOGIQUES ACADÉMIQUES ET SCIENTIFIQUES :
+
+Cette base de données regroupe les concepts cliniques, psychiatriques et neuroscientifiques majeurs. Utilise ces grilles de lecture pour analyser les schémas du patient.
+
+1. THÉRAPIE DES SCHÉMAS (Jeffrey Young)
+- Origine : Intégration des TCC, de la psychanalyse et de la théorie de l'attachement.
+- Concept : 18 Schémas Inadaptés Précoces (SIP) formés dans l'enfance.
+- Exemples de schémas : Abandon/Instabilité, Méfiance/Abus, Manque affectif, Imperfection/Honte, Isolement social, Dépendance/Incompétence, Assujettissement, Exigences élevées.
+- Stratégies d'adaptation dysfonctionnelles : 
+  * Soumission au schéma (répéter la situation toxique).
+  * Évitement du schéma (fuir les situations déclencheuses, addictions, isolement).
+  * Contre-attaque / Surcompensation (agir à l'opposé du schéma, ex: narcissisme pour masquer la honte).
+
+2. THÉORIE DE L'ATTACHEMENT (John Bowlby & Mary Ainsworth)
+- Attachement Sécure : Confiance en soi et en l'autre, régulation émotionnelle saine.
+- Attachement Anxieux-Ambivalent : Hyperactivation du système d'attachement, peur constante de l'abandon, dépendance affective, jalousie, besoin constant de réassurance.
+- Attachement Évitant : Désactivation du système d'attachement, peur de l'intimité, hyper-indépendance de façade, répression émotionnelle.
+- Attachement Désorganisé : Souvent lié à des traumas complexes, alternance chaotique entre approche et fuite (l'autre est à la fois la source de terreur et de réconfort).
+- Donald Winnicott : Concept du "Faux-self" (sur-adaptation de l'enfant aux attentes de l'environnement pour être aimé) vs "Vrai-self".
+
+3. NEUROSCIENCES ET PSYCHOTRAUMATOLOGIE
+- Bessel van der Kolk ("Le corps n'oublie rien") : Le trauma n'est pas qu'un souvenir, c'est une réorganisation physique du système nerveux. L'amygdale (détecteur de menace) devient hyperactive, et le cortex préfrontal (logique, inhibition) se désactive sous stress.
+- Stephen Porges (Théorie Polyvagale) : Hiérarchie du système nerveux autonome :
+  * Parasympathique Ventral : Sécurité, engagement social, connexion.
+  * Sympathique : Danger, mobilisation, réaction de "Fuite ou Combat" (Fight or Flight).
+  * Parasympathique Dorsal : Menace extrême, figement, dissociation, effondrement, apathie (Freeze).
+- Antonio Damasio ("L'Erreur de Descartes") : Hypothèse des marqueurs somatiques. Les émotions sont indispensables à la prise de décision rationnelle.
+
+4. THÉRAPIES COGNITIVO-COMPORTEMENTALES (TCC) & COGNITION
+- Aaron Beck : Triade cognitive de la dépression (vision négative de soi, du monde et de l'avenir).
+- Distorsions cognitives : Inférence arbitraire (conclusions sans preuves), Abstraction sélective (se focaliser sur le négatif), Sur-généralisation, Pensée dichotomique (tout ou rien), Personnalisation.
+- Albert Ellis (REBT) : Modèle ABC (Activating event -> Beliefs -> Consequences). Ce n'est pas l'événement qui crée la souffrance, mais la croyance irrationnelle à son sujet.
+- Daniel Kahneman : Système 1 (pensée rapide, émotionnelle, biaisée) vs Système 2 (pensée lente, logique, coûteuse en énergie). Biais de confirmation, biais de négativité.
+
+5. PSYCHOLOGIE ANALYTIQUE ET MÉCANISMES DE DÉFENSE (Freud, Jung)
+- Mécanismes de défense (Anna Freud) : 
+  * Déni (refus de la réalité).
+  * Projection (attribuer à l'autre ses propres pensées/fautes inacceptables).
+  * Déplacement (rediriger sa colère vers une cible moins menaçante).
+  * Formation réactionnelle (exprimer l'inverse de ce que l'on ressent vraiment).
+  * Rationalisation (trouver des excuses logiques à un comportement irrationnel ou inacceptable).
+- Carl Jung : Le concept de "l'Ombre" (les parts de soi que l'on rejette, cache ou ignore, et qui finissent par nous contrôler à notre insu).
+
+6. THÉAPIES DE LA TROISIÈME VAGUE (ACT & DBT)
+- Steven Hayes (ACT - Thérapie d'Acceptation et d'Engagement) : Vise la "Flexibilité Psychologique". Concepts clés : Défusion cognitive (se détacher de ses pensées, "je ne suis pas mes pensées"), Acceptation (arrêter de lutter contre les émotions négatives), Action engagée vers les Valeurs profondes.
+- Marsha Linehan (DBT - Thérapie Comportementale Dialectique) : Créée pour la dysrégulation émotionnelle sévère (Trouble Borderline). Tolérance à la détresse, pleine conscience, efficacité interpersonnelle.
+
+7. ANALYSE TRANSACTIONNELLE ET SYSTÉMIQUE
+- Eric Berne (Analyse Transactionnelle) : Les États du Moi (Parent normatif/nourricier, Adulte logique, Enfant soumis/rebelle/libre).
+- Stephen Karpman : Le Triangle Dramatique (Jeux psychologiques toxiques) :
+  * Victime (se plaint, cherche un sauveur, refuse la responsabilité).
+  * Sauveur (aide sans qu'on lui demande, maintient la victime dans la dépendance pour se valoriser).
+  * Persécuteur (critique, blâme, impose des règles rigides).
+- École de Palo Alto (Paul Watzlawick) : "On ne peut pas ne pas communiquer". Les tentatives de solutions deviennent souvent le problème (ex: trop rassurer un anxieux renforce son anxiété).
+
+8. PSYCHOLOGIE EXISTENTIELLE ET HUMANISTE
+- Irvin Yalom : Les 4 angoisses existentielles fondamentales qui sous-tendent nos névroses : La mort, L'isolement fondamental, La liberté (et son fardeau de responsabilité), L'absence de sens.
+9. LIVRES DE RÉFÉRENCE MAJEURS
+- "Introduction à la psychologie" de David G. Myers : Concepts fondamentaux, biais cognitifs, apprentissage, mémoire et fonctionnement global de l'esprit humain.
+- "L'homme qui prenait sa femme pour un chapeau" d'Oliver Sacks : Compréhension de la complexité neurologique, des troubles de la perception et de l'importance de l'empathie et de l'humanité face à la différence clinique.
+- "Thinking, Fast and Slow" (Système 1 / Système 2) de Daniel Kahneman : Analyse approfondie des biais cognitifs, des heuristiques de jugement, des décisions irrationnelles (Système 1) et de la nécessité d'activer la réflexion analytique (Système 2) pour contrer les automatismes.
+`;
+
+
+// ==========================================
+// Fichier : src/main.tsx
+// ==========================================
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+
+

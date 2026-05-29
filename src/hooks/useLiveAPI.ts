@@ -516,6 +516,15 @@ ${CLINICAL_SCENARIOS}`;
             // Start sending audio
             workletNode.port.onmessage = (event) => {
               const float32Array = event.data as Float32Array;
+              
+              // Prevent echo / self-interruption:
+              // If the AI is currently speaking (playing audio), send silence.
+              // This strictly prevents the microphone from picking up the AI's voice from the speakers
+              // and sending it back to the server, which would cause the AI to interrupt itself.
+              if (isPlayingRef.current) {
+                float32Array.fill(0);
+              }
+
               const pcm16Buffer = floatTo16BitPCM(float32Array);
               const base64Data = arrayBufferToBase64(pcm16Buffer);
 
