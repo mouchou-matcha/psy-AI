@@ -122,6 +122,7 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
   const isPlayingRef = useRef(false);
   const nextPlayTimeRef = useRef(0);
   const activeSourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
+  const playbackEndTimerRef = useRef<any>(null);
 
   const isIntentionalDisconnectRef = useRef(false);
 
@@ -146,13 +147,22 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
         isPlayingRef.current = true;
         setIsSpeaking(true);
       }
+      
+      if (playbackEndTimerRef.current) {
+        clearTimeout(playbackEndTimerRef.current);
+        playbackEndTimerRef.current = null;
+      }
 
       source.onended = () => {
         activeSourceNodesRef.current = activeSourceNodesRef.current.filter((s) => s !== source);
         if (activeSourceNodesRef.current.length === 0) {
-          isPlayingRef.current = false;
-          setIsSpeaking(false);
-          nextPlayTimeRef.current = 0;
+          playbackEndTimerRef.current = setTimeout(() => {
+            if (activeSourceNodesRef.current.length === 0) {
+              isPlayingRef.current = false;
+              setIsSpeaking(false);
+              nextPlayTimeRef.current = 0;
+            }
+          }, 800);
         }
       };
     }
@@ -169,6 +179,10 @@ export function useLiveAPI(user: any, history: any[], isIncisiveMode: boolean = 
       }
     });
     activeSourceNodesRef.current = [];
+    if (playbackEndTimerRef.current) {
+      clearTimeout(playbackEndTimerRef.current);
+      playbackEndTimerRef.current = null;
+    }
     isPlayingRef.current = false;
     nextPlayTimeRef.current = 0;
     setIsSpeaking(false);
