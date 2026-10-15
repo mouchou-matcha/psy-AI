@@ -662,10 +662,9 @@ export default function App() {
                     disabled={isLive}
                     onClick={() => setIsIncisiveMode(value)}
                     className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
-                      active ? (value ? 'text-alert' : 'text-lagoon') : 'text-ink-soft hover:text-ink'
+                      active ? `bg-paper shadow-sm ${value ? 'text-alert' : 'text-lagoon'}` : 'text-ink-soft hover:text-ink'
                     }`}
                   >
-                    {active && <motion.span layoutId="persona-pill" className="absolute inset-0 rounded-xl bg-paper shadow-sm" transition={{ duration: 0.2 }} />}
                     <Icon className="relative w-4 h-4" />
                     <span className="relative">{label}</span>
                   </button>

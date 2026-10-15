@@ -52,7 +52,7 @@ export function BreathOrb({ mode, analyserNode, tone = 'light', size = 280, clas
       const m = modeRef.current;
 
       // Amplitude cible selon l'état
-      let target = 0.08;
+      let target = 0.22;
       if (m === 'listening') {
         const analyser = analyserRef.current;
         if (analyser) {
@@ -61,7 +61,7 @@ export function BreathOrb({ mode, analyserNode, tone = 'light', size = 280, clas
           let sum = 0;
           for (let i = 0; i < data.length; i++) sum += data[i];
           target = 0.1 + Math.min(1, (sum / data.length) / 70) * 0.9;
-        } else target = 0.12;
+        } else target = 0.3;
       } else if (m === 'speaking') {
         target = 0.45 + 0.35 * Math.abs(Math.sin(t * 3.1) * Math.sin(t * 1.7 + 1));
       } else if (m === 'saving') {

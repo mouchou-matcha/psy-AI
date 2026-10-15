@@ -4,7 +4,6 @@ import { Wordmark } from './MindHeartLogo';
 import { BreathOrb } from './BreathOrb';
 import { Modal } from './Modal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { motion } from 'framer-motion';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -23,10 +22,9 @@ function AudienceToggle({ view, setView, className = '' }: { view: 'b2c' | 'b2b'
       onClick={() => setView(key)}
       aria-pressed={view === key}
       className={`relative px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-colors ${
-        view === key ? 'text-paper' : 'text-ink-soft hover:text-ink'
+        view === key ? 'bg-ink text-paper' : 'text-ink-soft hover:text-ink'
       }`}
     >
-      {view === key && <motion.span layoutId="audience-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ duration: 0.25 }} />}
       <Icon className="relative w-4 h-4" />
       <span className="relative">{label}</span>
     </button>
@@ -97,7 +95,7 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
                   thérapie systémique…
                 </p>
                 <div className="mt-9 flex flex-col sm:flex-row sm:items-center gap-4">
-                  <button onClick={onLogin} className="btn btn-primary px-7 py-4 text-base group">
+                  <button onClick={onLogin} className="btn btn-primary px-7 py-4 text-base group whitespace-nowrap">
                     Commencer ma première séance
                     <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
                   </button>
@@ -114,7 +112,7 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
               </div>
 
               <figure className="relative flex flex-col items-center">
-                <div className="relative w-full max-w-[420px] aspect-square flex items-center justify-center">
+                <div className="relative w-full max-w-[300px] sm:max-w-[420px] aspect-square flex items-center justify-center">
                   <div className="absolute inset-[12%] rounded-full bg-lagoon-pale/70 blur-2xl" aria-hidden="true" />
                   <BreathOrb mode="idle" size={420} className="relative" />
                 </div>
