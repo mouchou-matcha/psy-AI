@@ -845,7 +845,7 @@ export default function App() {
               )}
             </button>
 
-            {!hasStarted && !isSaving && (
+            {!hasStarted && !isLive && !isSaving && (
               <p className="mt-6 text-sm text-ink-faint max-w-xs leading-relaxed">
                 Installez-vous dans un endroit calme. Vos échanges sont traités en temps réel ; un résumé est sauvegardé pour assurer le suivi.
               </p>
