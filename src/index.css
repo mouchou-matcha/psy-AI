@@ -1,6 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Literata", Georgia, serif;
+
+  /* Palette « pièce calme » */
+  --color-mist: #edeef4;      /* fond général */
+  --color-paper: #f9f9fc;     /* surfaces */
+  --color-line: #d9dbe6;      /* bordures */
+  --color-ink: #1e2140;       /* texte principal */
+  --color-ink-soft: #545a7a;  /* texte secondaire */
+  --color-ink-faint: #8a8fa8; /* texte tertiaire */
+  --color-dusk: #171a33;      /* séance en cours */
+  --color-dusk-2: #232746;
+  --color-lagoon: #1f6b72;    /* action principale */
+  --color-lagoon-deep: #16525a;
+  --color-lagoon-pale: #dcebec;
+  --color-apricot: #e39a5f;   /* crédits, attention */
+  --color-apricot-pale: #f8e6d6;
+  --color-alert: #b3261e;
+  --color-alert-pale: #f7e1df;
+
+  /* Arbre thérapeutique */
+  --color-emotion: #2a8c86;
+  --color-symptom: #5561c9;
+  --color-root: #c4577e;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--color-mist);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  ::selection {
+    background: var(--color-lagoon-pale);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-lagoon);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input[type="checkbox"] {
+    accent-color: var(--color-lagoon);
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .btn:active:not(:disabled) { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--color-lagoon); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-lagoon-deep); }
+  .btn-quiet { background: transparent; color: var(--color-ink-soft); }
+  .btn-quiet:hover:not(:disabled) { background: rgba(30, 33, 64, 0.06); color: var(--color-ink); }
+  .btn-outline { border: 1px solid var(--color-line); background: var(--color-paper); color: var(--color-ink); }
+  .btn-outline:hover:not(:disabled) { border-color: var(--color-ink-faint); }
+
+  .field {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: #fff;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    color: var(--color-ink);
+  }
+  .field:focus { outline: 2px solid var(--color-lagoon); outline-offset: 0; border-color: transparent; }
+
+  .prose-calm p + p { margin-top: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

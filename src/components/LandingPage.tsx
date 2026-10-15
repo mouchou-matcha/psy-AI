@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Clock, Sparkles, ArrowRight, Building2, User, HeartPulse, TrendingDown, BookOpen, X, Send } from 'lucide-react';
-import { MindHeartLogo } from './MindHeartLogo';
+import { ShieldCheck, Clock, ArrowRight, Building2, User, HeartPulse, TrendingDown, BookOpen, Send, Compass, Phone } from 'lucide-react';
+import { Wordmark } from './MindHeartLogo';
+import { BreathOrb } from './BreathOrb';
+import { Modal } from './Modal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { motion } from 'framer-motion';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -10,22 +11,31 @@ interface LandingPageProps {
 }
 
 const b2bData = [
-  {
-    name: 'Absentéisme (jours/an)',
-    'Sans accompagnement': 12,
-    'Avec Marie': 4,
-  },
-  {
-    name: 'Turnover (%)',
-    'Sans accompagnement': 15,
-    'Avec Marie': 5,
-  },
-  {
-    name: 'Baisse productivité (%)',
-    'Sans accompagnement': 35,
-    'Avec Marie': 10,
-  },
+  { name: 'Absentéisme (jours/an)', 'Sans accompagnement': 12, 'Avec Marie': 4 },
+  { name: 'Turnover (%)', 'Sans accompagnement': 15, 'Avec Marie': 5 },
+  { name: 'Baisse productivité (%)', 'Sans accompagnement': 35, 'Avec Marie': 10 },
 ];
+
+function AudienceToggle({ view, setView, className = '' }: { view: 'b2c' | 'b2b'; setView: (v: 'b2c' | 'b2b') => void; className?: string }) {
+  const item = (key: 'b2c' | 'b2b', label: string, Icon: typeof User) => (
+    <button
+      onClick={() => setView(key)}
+      aria-pressed={view === key}
+      className={`relative px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-colors ${
+        view === key ? 'bg-ink text-paper' : 'text-ink-soft hover:text-ink'
+      }`}
+    >
+      <Icon className="relative w-4 h-4" />
+      <span className="relative">{label}</span>
+    </button>
+  );
+  return (
+    <div className={`inline-flex p-1 rounded-full bg-paper border border-line ${className}`} role="group" aria-label="Public">
+      {item('b2c', 'Particuliers', User)}
+      {item('b2b', 'Entreprises', Building2)}
+    </div>
+  );
+}
 
 export function LandingPage({ onLogin, authError }: LandingPageProps) {
   const [view, setView] = useState<'b2c' | 'b2b'>('b2c');
@@ -34,7 +44,7 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
     company: '',
     employees: '',
     email: '',
-    description: ''
+    description: '',
   });
 
   const handleContactSubmit = (e: React.FormEvent) => {
@@ -42,9 +52,9 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
     const subject = encodeURIComponent(`Demande B2B Marie AI - ${formData.company}`);
     const body = encodeURIComponent(
       `Entreprise: ${formData.company}\n` +
-      `Nombre d'employés: ${formData.employees}\n` +
-      `Email de contact: ${formData.email}\n\n` +
-      `Descriptif du besoin:\n${formData.description}`
+        `Nombre d'employés: ${formData.employees}\n` +
+        `Email de contact: ${formData.email}\n\n` +
+        `Descriptif du besoin:\n${formData.description}`,
     );
     window.location.href = `mailto:julyand36@gmail.com?subject=${subject}&body=${body}`;
     setShowContactForm(false);
@@ -52,364 +62,317 @@ export function LandingPage({ onLogin, authError }: LandingPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 font-sans selection:bg-teal-500/30 relative overflow-hidden">
-      {/* Ambient glowing orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <motion.div 
-          animate={{ 
-            x: [0, 100, -50, 0], 
-            y: [0, -50, 100, 0],
-            scale: [1, 1.1, 0.9, 1]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, -100, 50, 0], 
-            y: [0, 100, -50, 0],
-            scale: [1, 1.2, 0.8, 1]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, 50, -100, 0], 
-            y: [0, 50, -100, 0],
-            scale: [1, 0.9, 1.1, 1]
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
-        />
-      </div>
-
+    <div className="min-h-screen bg-mist text-ink overflow-x-hidden">
       {/* Navigation */}
-      <nav className="border-b border-slate-800/50 bg-slate-950/50 backdrop-blur-md fixed top-0 w-full z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
-              <MindHeartLogo className="w-5 h-5 text-teal-500" />
-            </div>
-            <span className="text-xl font-medium tracking-tight">Marie</span>
-          </div>
-
-          {/* View Toggle (Mobile: hidden, Desktop: visible) */}
-          <div className="hidden md:flex bg-slate-900 p-1 rounded-full border border-slate-800">
-            <button
-              onClick={() => setView('b2c')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                view === 'b2c' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              Particuliers
-            </button>
-            <button
-              onClick={() => setView('b2b')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                view === 'b2b' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              Entreprises
-            </button>
-          </div>
-
-          <button 
-            onClick={onLogin}
-            className="text-sm font-medium px-5 py-2.5 rounded-full bg-white text-slate-950 hover:bg-slate-200 transition-colors"
-          >
+      <nav className="sticky top-0 z-40 bg-mist/85 backdrop-blur-md border-b border-line/70">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-18 py-3 flex items-center justify-between gap-4">
+          <Wordmark />
+          <AudienceToggle view={view} setView={setView} className="hidden md:inline-flex" />
+          <button onClick={onLogin} className="btn btn-outline px-5 py-2.5 text-sm">
             Se connecter
           </button>
         </div>
-        
-        {/* Mobile View Toggle */}
-        <div className="md:hidden flex justify-center pb-3 bg-slate-950/50 backdrop-blur-md border-b border-slate-800/50">
-          <div className="flex bg-slate-900 p-1 rounded-full border border-slate-800">
-            <button
-              onClick={() => setView('b2c')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                view === 'b2c' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              Particuliers
-            </button>
-            <button
-              onClick={() => setView('b2b')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                view === 'b2b' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              Entreprises
-            </button>
-          </div>
+        <div className="md:hidden flex justify-center pb-3">
+          <AudienceToggle view={view} setView={setView} />
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="pt-32 md:pt-32 pb-16 px-6">
+      <main>
         {view === 'b2c' ? (
-          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col items-center text-center max-w-3xl mx-auto mt-8 md:mt-16 mb-24">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-medium mb-8">
-                <Sparkles className="w-4 h-4" />
-                <span>Votre Coach Émotionnel Personnel</span>
-              </div>
-              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-8 leading-[1.1]">
-                La santé mentale, <br className="hidden md:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-teal-500">
-                  accessible à tout moment.
-                </span>
-              </h1>
-              <p className="text-lg md:text-xl text-slate-400 mb-6 leading-relaxed max-w-2xl">
-                Créé par un étudiant avec une mission simple : rendre le soutien psychologique disponible 24h/24 et 7j/7 pour tous.
-              </p>
-              <p className="text-base text-slate-500 mb-10 leading-relaxed max-w-2xl">
-                Marie vous écoute, vous aide à traverser vos moments difficiles, et vous oriente vers la thérapie (TCC, EMDR, psychanalyse...) qui correspondra le mieux à vos besoins uniques.
-              </p>
-              <button 
-                onClick={onLogin}
-                className="group flex items-center gap-2 text-base font-medium px-8 py-4 rounded-full bg-teal-500 text-slate-950 hover:bg-teal-400 transition-all hover:scale-105 active:scale-95"
-              >
-                Commencer ma première séance
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              {authError && (
-                <p className="mt-4 text-sm text-red-400 bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20">
-                  {authError}
+          <>
+            {/* Hero */}
+            <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-12 sm:pt-20 pb-20 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-8 items-center">
+              <div className="max-w-xl">
+                <h1 className="text-[2.6rem] leading-[1.08] sm:text-6xl sm:leading-[1.04] text-ink">
+                  Quelqu'un pour vous écouter, même à trois heures du matin.
+                </h1>
+                <p className="mt-7 text-lg text-ink-soft leading-relaxed">
+                  Marie est une assistante psychologique vocale. Vous parlez, elle écoute, vous aide à mettre des mots sur ce que vous
+                  vivez et à repérer les schémas qui se répètent.
                 </p>
-              )}
-            </div>
-
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-3 gap-6 mt-24">
-              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 border border-blue-500/20">
-                  <Clock className="w-6 h-6 text-blue-400" />
+                <p className="mt-4 text-ink-soft leading-relaxed">
+                  Au fil des séances, elle vous oriente vers la thérapie qui vous correspond le mieux : TCC, EMDR, psychanalyse,
+                  thérapie systémique…
+                </p>
+                <div className="mt-9 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <button onClick={onLogin} className="btn btn-primary px-7 py-4 text-base group whitespace-nowrap">
+                    Commencer ma première séance
+                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                  <p className="text-sm text-ink-faint">5 minutes offertes, connexion avec Google</p>
                 </div>
-                <h3 className="text-xl font-medium mb-3">Disponible 24/7</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Une angoisse au milieu de la nuit ? Un coup de stress avant un examen ? Marie est là pour vous écouter instantanément.
-                </p>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 border border-purple-500/20">
-                  <MindHeartLogo className="w-6 h-6 text-purple-400" />
-                </div>
-                <h3 className="text-xl font-medium mb-3">Orientation Thérapeutique</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Au fil de vos échanges, Marie identifie vos schémas et vous suggère le type de thérapie humaine le plus adapté à votre profil.
-                </p>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-slate-800/50 hover:bg-slate-900/60 transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center mb-6 border border-teal-500/20">
-                  <ShieldCheck className="w-6 h-6 text-teal-400" />
-                </div>
-                <h3 className="text-xl font-medium mb-3">Espace Sécurisé</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Vos échanges sont privés. Vous gardez le contrôle total sur vos données, pour vous confier sans aucun jugement.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col items-center text-center max-w-3xl mx-auto mt-8 md:mt-16 mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-8">
-                <Building2 className="w-4 h-4" />
-                <span>Solutions pour les Entreprises</span>
-              </div>
-              <h1 className="text-5xl md:text-6xl font-semibold tracking-tight mb-8 leading-[1.1]">
-                Un esprit sain dans un corps sain : <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">
-                  le secret de la prévention.
-                </span>
-              </h1>
-              <p className="text-lg md:text-xl text-slate-400 mb-10 leading-relaxed max-w-2xl">
-                L'accompagnement émotionnel proactif permet une baisse drastique des mises en arrêt maladie. L'esprit est intimement lié au corps : soulager la charge mentale, c'est prévenir les maladies physiques.
-              </p>
-              <button 
-                onClick={() => setShowContactForm(true)}
-                className="group flex items-center gap-2 text-base font-medium px-8 py-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-all hover:scale-105 active:scale-95"
-              >
-                Protéger mes équipes
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-
-            {/* Data Section */}
-            <div className="grid lg:grid-cols-2 gap-12 items-center mt-16">
-              <div className="space-y-8">
-                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                      <TrendingDown className="w-6 h-6 text-red-400" />
-                    </div>
-                    <h3 className="text-2xl font-medium">Baisse de l'absentéisme</h3>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed mb-6">
-                    Les études démontrent que les employés bénéficiant d'un soutien psychologique régulier (coach émotionnel) voient leur taux d'arrêt maladie chuter de manière significative. Le stress chronique étant un immunosuppresseur majeur.
+                {authError && (
+                  <p role="alert" className="mt-5 text-sm text-alert bg-alert-pale px-4 py-3 rounded-xl">
+                    {authError}
                   </p>
-                  <a href="https://www.who.int/news-room/fact-sheets/detail/mental-health-at-work" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                )}
+                <p className="mt-10 text-sm text-ink-faint max-w-md">
+                  Créé par un étudiant avec une mission simple : rendre le soutien psychologique disponible 24 h/24 et 7 j/7, pour tous.
+                </p>
+              </div>
+
+              <figure className="relative flex flex-col items-center">
+                <div className="relative w-full max-w-[300px] sm:max-w-[420px] aspect-square flex items-center justify-center">
+                  <div className="absolute inset-[12%] rounded-full bg-lagoon-pale/70 blur-2xl" aria-hidden="true" />
+                  <BreathOrb mode="idle" size={420} className="relative" />
+                </div>
+                <figcaption className="mt-2 max-w-sm rounded-2xl bg-paper border border-line px-5 py-4 shadow-[0_10px_30px_-18px_rgba(30,33,64,0.35)]">
+                  <p className="font-serif text-[1.05rem] leading-snug text-ink">
+                    « Je remarque qu'on revient souvent sur cette peur de l'échec. Et si on la regardait sous un autre angle ? »
+                  </p>
+                  <p className="mt-2 text-xs text-ink-faint">Exemple de relance de Marie pendant une séance</p>
+                </figcaption>
+              </figure>
+            </section>
+
+            {/* Déroulé d'une séance */}
+            <section className="bg-paper border-y border-line">
+              <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20">
+                <h2 className="text-3xl sm:text-4xl max-w-xl">Comment se passe une séance</h2>
+                <ol className="mt-12 grid md:grid-cols-3 gap-10 md:gap-8">
+                  {[
+                    {
+                      title: 'Vous parlez, à votre rythme',
+                      text: "Installez-vous dans un endroit calme et lancez la séance. Marie vous pose des questions qui partent de la situation concrète pour remonter vers les émotions et les besoins.",
+                    },
+                    {
+                      title: 'Marie fait le point avec vous',
+                      text: 'Elle reformule, repère les boucles et vous propose des hypothèses sur les schémas qui se répètent, sans jamais poser de diagnostic médical.',
+                    },
+                    {
+                      title: 'Vous repartez avec un plan',
+                      text: "À la fin, vous retrouvez un résumé, une carte de vos émotions et de leurs causes, des exercices à essayer et le type de professionnel à consulter.",
+                    },
+                  ].map((step, i) => (
+                    <li key={step.title} className="relative pl-14">
+                      <span className="absolute left-0 top-0 w-10 h-10 rounded-full border border-ink/20 flex items-center justify-center font-serif text-lg text-ink">
+                        {i + 1}
+                      </span>
+                      <h3 className="text-xl">{step.title}</h3>
+                      <p className="mt-3 text-ink-soft leading-relaxed">{step.text}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </section>
+
+            {/* Engagements */}
+            <section className="max-w-6xl mx-auto px-5 sm:px-8 py-20 grid md:grid-cols-3 gap-x-10 gap-y-12">
+              {[
+                {
+                  icon: Clock,
+                  title: 'Disponible 24/7',
+                  text: "Une angoisse au milieu de la nuit, un coup de stress avant un examen : Marie est là pour vous écouter, tout de suite.",
+                },
+                {
+                  icon: Compass,
+                  title: 'Orientation thérapeutique',
+                  text: 'Au fil de vos échanges, Marie identifie vos schémas et vous suggère le type de thérapie humaine le plus adapté à votre profil.',
+                },
+                {
+                  icon: ShieldCheck,
+                  title: 'Un espace confidentiel',
+                  text: 'Vos échanges sont privés. Vous pouvez exporter ou supprimer toutes vos données à tout moment depuis les paramètres.',
+                },
+              ].map(({ icon: Icon, title, text }) => (
+                <div key={title} className="border-t-2 border-ink pt-6">
+                  <Icon className="w-6 h-6 text-lagoon" strokeWidth={1.75} />
+                  <h3 className="mt-4 text-xl">{title}</h3>
+                  <p className="mt-3 text-ink-soft leading-relaxed">{text}</p>
+                </div>
+              ))}
+            </section>
+
+            {/* Sécurité */}
+            <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-24">
+              <div className="rounded-3xl bg-ink text-paper px-7 py-9 sm:px-12 sm:py-12 grid md:grid-cols-[1fr_auto] gap-8 items-center">
+                <div className="max-w-xl">
+                  <h2 className="text-2xl sm:text-3xl text-paper">Marie accompagne, elle ne remplace pas un soignant.</h2>
+                  <p className="mt-4 text-paper/75 leading-relaxed">
+                    Si vous traversez une crise ou avez des pensées suicidaires, appelez immédiatement un professionnel. Ces numéros sont
+                    gratuits et joignables 24 h/24.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {[
+                    { n: '3114', l: 'Prévention suicide' },
+                    { n: '15', l: 'SAMU' },
+                    { n: '112', l: 'Urgences' },
+                  ].map((c) => (
+                    <a
+                      key={c.n}
+                      href={`tel:${c.n}`}
+                      className="flex items-center gap-3 rounded-2xl bg-paper/10 hover:bg-paper/15 px-4 py-3 transition-colors"
+                    >
+                      <Phone className="w-4 h-4 text-apricot" />
+                      <span>
+                        <span className="block font-serif text-xl leading-none">{c.n}</span>
+                        <span className="block text-xs text-paper/65 mt-1">{c.l}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-12 sm:pt-20 pb-16">
+              <div className="max-w-3xl">
+                <h1 className="text-[2.4rem] leading-[1.08] sm:text-6xl sm:leading-[1.04]">
+                  Un esprit sain dans un corps sain : le secret de la prévention.
+                </h1>
+                <p className="mt-7 text-lg text-ink-soft leading-relaxed max-w-2xl">
+                  L'accompagnement émotionnel proactif permet une baisse importante des arrêts maladie. L'esprit est intimement lié au
+                  corps : soulager la charge mentale, c'est prévenir les maladies physiques.
+                </p>
+                <button onClick={() => setShowContactForm(true)} className="btn btn-primary mt-9 px-7 py-4 text-base group">
+                  Protéger mes équipes
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </section>
+
+            <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-24 grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-14 items-start">
+              <div className="space-y-10">
+                <article className="border-t-2 border-ink pt-6">
+                  <TrendingDown className="w-6 h-6 text-lagoon" strokeWidth={1.75} />
+                  <h2 className="mt-4 text-2xl">Moins d'absentéisme</h2>
+                  <p className="mt-3 text-ink-soft leading-relaxed">
+                    Les employés bénéficiant d'un soutien psychologique régulier voient leur taux d'arrêt maladie baisser nettement. Le
+                    stress chronique affaiblit le système immunitaire.
+                  </p>
+                  <a
+                    href="https://www.who.int/news-room/fact-sheets/detail/mental-health-at-work"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-lagoon hover:text-lagoon-deep underline underline-offset-4 decoration-lagoon/30"
+                  >
                     <BookOpen className="w-4 h-4" />
                     Rapport de l'OMS sur la santé mentale au travail
                   </a>
-                </div>
-
-                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
-                      <HeartPulse className="w-6 h-6 text-teal-400" />
-                    </div>
-                    <h3 className="text-2xl font-medium">Le lien Corps-Esprit</h3>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed mb-6">
-                    L'American Psychological Association (APA) souligne que le stress non géré est lié aux six principales causes de décès. Un esprit sain prévient l'apparition de troubles somatiques (troubles musculo-squelettiques, maladies cardiovasculaires).
+                </article>
+                <article className="border-t-2 border-ink pt-6">
+                  <HeartPulse className="w-6 h-6 text-lagoon" strokeWidth={1.75} />
+                  <h2 className="mt-4 text-2xl">Le lien corps-esprit</h2>
+                  <p className="mt-3 text-ink-soft leading-relaxed">
+                    L'American Psychological Association souligne que le stress non géré est lié aux six principales causes de décès. Un
+                    esprit apaisé prévient l'apparition de troubles somatiques (musculo-squelettiques, cardiovasculaires).
                   </p>
-                  <a href="https://www.apa.org/topics/stress/health" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                  <a
+                    href="https://www.apa.org/topics/stress/health"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-lagoon hover:text-lagoon-deep underline underline-offset-4 decoration-lagoon/30"
+                  >
                     <BookOpen className="w-4 h-4" />
                     Étude de l'APA sur le stress et la santé physique
                   </a>
-                </div>
+                </article>
               </div>
 
-              {/* Chart */}
-              <div className="bg-slate-900/30 backdrop-blur-md border border-slate-800/50 p-8 rounded-3xl h-[500px] flex flex-col">
-                <h3 className="text-xl font-medium mb-2 text-center">Impact de l'accompagnement émotionnel</h3>
-                <p className="text-sm text-slate-500 text-center mb-8">Comparaison moyenne annuelle par employé</p>
-                <div className="flex-1 w-full">
+              <figure className="rounded-3xl bg-paper border border-line p-6 sm:p-8">
+                <h3 className="text-xl">Impact de l'accompagnement émotionnel</h3>
+                <p className="text-sm text-ink-faint mt-1">Comparaison moyenne annuelle par employé</p>
+                <div className="h-[360px] mt-6 -ml-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={b2bData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <defs>
-                        <linearGradient id="colorSans" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
-                        </linearGradient>
-                        <linearGradient id="colorAvec" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                      <XAxis dataKey="name" stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#a1a1aa" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip 
-                        cursor={{ fill: '#27272a', opacity: 0.4 }}
-                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px', color: '#f4f4f5' }}
-                        itemStyle={{ color: '#f4f4f5' }}
+                    <BarChart data={b2bData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }} barGap={6}>
+                      <CartesianGrid strokeDasharray="2 4" stroke="#d9dbe6" vertical={false} />
+                      <XAxis dataKey="name" stroke="#545a7a" fontSize={12} tickLine={false} axisLine={false} interval={0} />
+                      <YAxis stroke="#8a8fa8" fontSize={12} tickLine={false} axisLine={false} width={36} />
+                      <Tooltip
+                        cursor={{ fill: '#edeef4' }}
+                        contentStyle={{ backgroundColor: '#f9f9fc', border: '1px solid #d9dbe6', borderRadius: 12, color: '#1e2140' }}
                       />
-                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                      <Bar dataKey="Sans accompagnement" fill="url(#colorSans)" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Avec Marie" fill="url(#colorAvec)" radius={[4, 4, 0, 0]} />
+                      <Legend wrapperStyle={{ paddingTop: 16, fontSize: 13 }} iconType="circle" />
+                      <Bar dataKey="Sans accompagnement" fill="#c9ccdb" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="Avec Marie" fill="#1f6b72" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-            </div>
-          </div>
+              </figure>
+            </section>
+          </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/50 py-12 text-center text-slate-500 text-sm">
-        <p>© {new Date().getFullYear()} Marie AI. Tous droits réservés.</p>
-        <p className="mt-2">Ceci est un outil d'accompagnement et ne remplace pas un suivi médical ou psychiatrique en cas d'urgence.</p>
-      </footer>
-      {/* Contact Form Modal */}
-      {showContactForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setShowContactForm(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                <Building2 className="w-5 h-5 text-blue-400" />
-              </div>
-              <h2 className="text-xl font-semibold">Demande d'informations</h2>
-            </div>
-            
-            <p className="text-slate-400 text-sm mb-6">
-              Laissez-nous vos coordonnées et décrivez-nous vos besoins. Nous vous recontacterons rapidement pour vous proposer une solution adaptée.
-            </p>
-
-            <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nom de l'entreprise</label>
-                <input 
-                  type="text" 
-                  required
-                  value={formData.company}
-                  onChange={(e) => setFormData({...formData, company: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  placeholder="Ex: Acme Corp"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nombre d'employés</label>
-                <select 
-                  required
-                  value={formData.employees}
-                  onChange={(e) => setFormData({...formData, employees: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
-                >
-                  <option value="" disabled>Sélectionnez une taille</option>
-                  <option value="1-10">1 à 10 employés</option>
-                  <option value="11-50">11 à 50 employés</option>
-                  <option value="51-200">51 à 200 employés</option>
-                  <option value="201-500">201 à 500 employés</option>
-                  <option value="500+">Plus de 500 employés</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email de contact</label>
-                <input 
-                  type="email" 
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  placeholder="vous@entreprise.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Descriptif du besoin</label>
-                <textarea 
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  rows={4}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none"
-                  placeholder="Quels sont les défis actuels de vos équipes ?"
-                />
-              </div>
-
-              <button 
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-xl transition-colors mt-6"
-              >
-                <Send className="w-4 h-4" />
-                Envoyer ma demande
-              </button>
-            </form>
+      <footer className="border-t border-line">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between text-sm text-ink-faint">
+          <Wordmark className="opacity-80" />
+          <div className="sm:text-right">
+            <p>© {new Date().getFullYear()} Marie AI. Tous droits réservés.</p>
+            <p className="mt-1">Outil d'accompagnement : il ne remplace pas un suivi médical ou psychiatrique en cas d'urgence.</p>
           </div>
         </div>
-      )}
+      </footer>
+
+      <Modal
+        open={showContactForm}
+        onClose={() => setShowContactForm(false)}
+        title="Demande d'informations"
+        description="Décrivez-nous vos besoins : nous vous recontactons rapidement avec une proposition adaptée."
+        icon={<Building2 className="w-6 h-6 text-lagoon" />}
+        size="sm"
+      >
+        <form onSubmit={handleContactSubmit} className="space-y-4">
+          <label className="block">
+            <span className="block text-sm font-semibold mb-1.5">Nom de l'entreprise</span>
+            <input
+              type="text"
+              required
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className="field"
+              placeholder="Ex. Acme Corp"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm font-semibold mb-1.5">Nombre d'employés</span>
+            <select
+              required
+              value={formData.employees}
+              onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
+              className="field"
+            >
+              <option value="" disabled>
+                Sélectionnez une taille
+              </option>
+              <option value="1-10">1 à 10 employés</option>
+              <option value="11-50">11 à 50 employés</option>
+              <option value="51-200">51 à 200 employés</option>
+              <option value="201-500">201 à 500 employés</option>
+              <option value="500+">Plus de 500 employés</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="block text-sm font-semibold mb-1.5">E-mail de contact</span>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="field"
+              placeholder="vous@entreprise.com"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm font-semibold mb-1.5">Votre besoin</span>
+            <textarea
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={4}
+              className="field resize-none"
+              placeholder="Quels sont les défis actuels de vos équipes ?"
+            />
+          </label>
+          <button type="submit" className="btn btn-primary w-full py-3.5 mt-2">
+            <Send className="w-4 h-4" />
+            Envoyer ma demande
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }
+
