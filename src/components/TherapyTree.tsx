@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { Heart, Leaf, Target, X } from 'lucide-react';
-import { MindHeartLogo } from './MindHeartLogo';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
@@ -37,10 +36,10 @@ export function TherapyTree({ data }: { data: TreeData }) {
     // Respirelax inspired calming palette
     const getColor = (type: string) => {
       switch (type) {
-        case 'root_cause': return '#F472B6'; // Soft Pink (more distinct)
-        case 'emotion': return '#2DD4BF'; // Calming Teal
-        case 'symptom': return '#818CF8'; // Soft Indigo (moved from root cause)
-        default: return '#94A3B8'; // Slate
+        case 'root_cause': return '#c4577e';
+        case 'emotion': return '#2a8c86';
+        case 'symptom': return '#5561c9';
+        default: return '#8a8fa8';
       }
     };
 
@@ -74,9 +73,9 @@ export function TherapyTree({ data }: { data: TreeData }) {
       .data(links)
       .join('path')
       .attr('fill', 'none')
-      .attr('stroke', 'rgba(255, 255, 255, 0.2)')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '4 12')
+      .attr('stroke', 'rgba(30, 33, 64, 0.28)')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-dasharray', '3 9')
       .attr('stroke-linecap', 'round')
       .style('animation', 'flowDots 30s linear infinite');
 
@@ -86,10 +85,10 @@ export function TherapyTree({ data }: { data: TreeData }) {
       .join('g');
 
     const linkLabel = linkLabelGroup.append('text')
-      .attr('font-family', 'Inter, system-ui, sans-serif')
+      .attr('font-family', '"Atkinson Hyperlegible Next", system-ui, sans-serif')
       .attr('font-size', '11px')
       .attr('font-weight', '400')
-      .attr('fill', 'rgba(255,255,255,0.5)')
+      .attr('fill', 'rgba(84,90,122,0.9)')
       .attr('text-anchor', 'middle')
       .attr('letter-spacing', '0.5px')
       .text(d => d.label || '');
@@ -111,8 +110,8 @@ export function TherapyTree({ data }: { data: TreeData }) {
     innerNode.append('circle')
       .attr('r', 16)
       .attr('fill', d => getColor(d.type))
-      .attr('stroke', 'rgba(255,255,255,0.9)')
-      .attr('stroke-width', 1.5)
+      .attr('stroke', '#f9f9fc')
+      .attr('stroke-width', 3)
       .style('transition', 'all 0.3s ease');
 
     node.on('mouseover', function(event, d) {
@@ -130,12 +129,16 @@ export function TherapyTree({ data }: { data: TreeData }) {
     });
 
     innerNode.append('text')
-      .attr('dy', 55)
+      .attr('dy', 38)
       .attr('text-anchor', 'middle')
-      .attr('font-family', 'Inter, system-ui, sans-serif')
-      .attr('font-size', '13px')
-      .attr('font-weight', '400')
-      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('font-family', '"Atkinson Hyperlegible Next", system-ui, sans-serif')
+      .attr('font-size', '14px')
+      .attr('font-weight', '600')
+      .attr('fill', '#1e2140')
+      .attr('paint-order', 'stroke')
+      .attr('stroke', '#f9f9fc')
+      .attr('stroke-width', 4)
+      .attr('stroke-linejoin', 'round')
       .attr('letter-spacing', '0.5px')
       .style('pointer-events', 'none')
       .text(d => d.label);
@@ -183,89 +186,72 @@ export function TherapyTree({ data }: { data: TreeData }) {
 
   if (!data || !data.nodes || data.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px] rounded-[24px] bg-slate-900/20 backdrop-blur-md border border-slate-800/50">
-        <p className="text-slate-400 text-sm font-medium">L'arbre thérapeutique se construira au fil des séances.</p>
+      <div className="flex items-center justify-center h-full min-h-[400px] rounded-2xl bg-mist">
+        <p className="text-ink-soft text-sm">L'arbre thérapeutique se construira au fil des séances.</p>
       </div>
     );
   }
 
+  const typeMeta = (type: string) =>
+    type === 'root_cause'
+      ? { label: 'Cause racine', color: '#c4577e', Icon: Target }
+      : type === 'emotion'
+        ? { label: 'Émotion', color: '#2a8c86', Icon: Heart }
+        : type === 'symptom'
+          ? { label: 'Symptôme', color: '#5561c9', Icon: Leaf }
+          : { label: type, color: '#8a8fa8', Icon: Leaf };
+
   return (
-    <div className="w-full h-full min-h-[500px] relative overflow-hidden cursor-move font-sans rounded-[24px] bg-slate-900/20 backdrop-blur-md border border-slate-800/50">
+    <div className="w-full h-full min-h-[460px] relative overflow-hidden cursor-grab active:cursor-grabbing rounded-2xl bg-[radial-gradient(circle_at_50%_45%,#f9f9fc_0%,#edeef4_75%)]">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
-        }
-        @keyframes breathe {
-          0%, 100% { transform: scale(1); opacity: 0.2; }
-          50% { transform: scale(1.25); opacity: 0.1; }
+          50% { transform: translateY(-6px); }
         }
         @keyframes flowDots {
           to { stroke-dashoffset: -300; }
         }
       `}</style>
-      
-      {/* Ambient glowing orbs in background */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      {/* Legend */}
-      <div className="absolute top-6 left-6 flex flex-col gap-3 bg-slate-900/40 backdrop-blur-md p-5 rounded-2xl border border-slate-700/30 z-10">
-        <div className="flex items-center gap-2 mb-1">
-          <MindHeartLogo className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-medium text-slate-400 uppercase tracking-widest">Légende</h3>
-        </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3 text-sm text-slate-200">
-            <div className="w-3 h-3 rounded-full bg-[#F472B6]"></div>
-            <span className="font-light">Cause Racine</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-slate-200">
-            <div className="w-3 h-3 rounded-full bg-[#818CF8]"></div>
-            <span className="font-light">Symptôme</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-slate-200">
-            <div className="w-3 h-3 rounded-full bg-[#2DD4BF]"></div>
-            <span className="font-light">Émotion</span>
-          </div>
-        </div>
-      </div>
+      <ul className="absolute top-4 left-4 z-10 flex flex-wrap gap-x-4 gap-y-2 rounded-2xl bg-paper/90 backdrop-blur px-4 py-3 border border-line text-sm" aria-label="Légende">
+        {(['root_cause', 'symptom', 'emotion'] as const).map((t) => {
+          const m = typeMeta(t);
+          return (
+            <li key={t} className="flex items-center gap-2 text-ink">
+              <span className="w-3 h-3 rounded-full" style={{ background: m.color }} />
+              {m.label}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="absolute bottom-3 right-4 z-10 text-xs text-ink-faint pointer-events-none">Glissez pour déplacer · molette ou pincement pour zoomer</p>
 
-      <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full z-0 relative" />
-      
-      {/* Tooltip */}
-      {selectedNode && (
-        <div 
-          className="fixed z-50 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-5 rounded-2xl max-w-sm transform -translate-x-1/2 -translate-y-full mt-[-20px] transition-all duration-300 ease-out"
-          style={{ left: tooltipPos.x, top: tooltipPos.y }}
-        >
-          <div className="flex items-start gap-4 pr-6">
-            <div className="mt-0.5 flex-shrink-0">
-              {selectedNode.type === 'root_cause' ? <Target className="w-6 h-6" style={{ color: '#F472B6' }} /> :
-               selectedNode.type === 'emotion' ? <Heart className="w-6 h-6" style={{ color: '#2DD4BF' }} /> :
-               selectedNode.type === 'symptom' ? <Leaf className="w-6 h-6" style={{ color: '#818CF8' }} /> : 
-               <MindHeartLogo className="w-6 h-6 text-slate-400" />}
-            </div>
-            <div>
-              <div className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-1.5">
-                {selectedNode.type === 'root_cause' ? 'Cause Racine' :
-                 selectedNode.type === 'emotion' ? 'Émotion' :
-                 selectedNode.type === 'symptom' ? 'Symptôme' : selectedNode.type}
-              </div>
-              <h4 className="font-normal text-slate-100 text-lg leading-tight">
-                {selectedNode.label}
-              </h4>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => setSelectedNode(null)}
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors"
+      <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" className="w-full h-full relative" role="img" aria-label="Carte des émotions, symptômes et causes racines" />
+
+      {selectedNode && (() => {
+        const m = typeMeta(selectedNode.type);
+        return (
+          <div
+            className="fixed z-[70] bg-paper border border-line shadow-[0_16px_40px_-16px_rgba(30,33,64,0.45)] p-4 pr-11 rounded-2xl max-w-xs -translate-x-1/2 -translate-y-full -mt-4"
+            style={{ left: tooltipPos.x, top: tooltipPos.y }}
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+            <div className="flex items-start gap-3">
+              <m.Icon className="w-5 h-5 mt-0.5 shrink-0" style={{ color: m.color }} />
+              <div>
+                <p className="text-xs font-semibold" style={{ color: m.color }}>{m.label}</p>
+                <p className="font-serif text-lg leading-snug text-ink mt-0.5">{selectedNode.label}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="absolute top-2.5 right-2.5 w-8 h-8 flex items-center justify-center rounded-full text-ink-faint hover:text-ink hover:bg-mist"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

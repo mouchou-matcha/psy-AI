@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Activity, User, Brain, Loader2, X, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogIn, LogOut, UserPlus, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Copy, Check, Download, Settings, ChevronDown, ChevronUp, Volume2, Play, Info, Globe } from 'lucide-react';
+import { Mic, Square, User, Loader2, Sparkles, Calendar, Network, Stethoscope, AlertTriangle, ShieldCheck, Compass, FileText, LogOut, ClipboardList, Target, CheckCircle2, HeartPulse, Zap, Heart, Trash2, Check, Download, Settings, ChevronDown, Volume2, Play, Info, Globe, Phone, Clock, ChevronRight, Hand } from 'lucide-react';
 import { useLiveAPI, previewVoice } from './hooks/useLiveAPI';
 import { TherapyTree } from './components/TherapyTree';
-import { MindHeartLogo } from './components/MindHeartLogo';
+import { MindHeartLogo, Wordmark } from './components/MindHeartLogo';
 import { LandingPage } from './components/LandingPage';
-import { AudioVisualizer } from './components/AudioVisualizer';
+import { BreathOrb, type OrbMode } from './components/BreathOrb';
+import { Modal } from './components/Modal';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, deleteUser } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, getDocs } from 'firebase/firestore';
 import { jsPDF } from 'jspdf';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface SessionHistory {
   id: string;
@@ -74,6 +75,8 @@ export default function App() {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
 
   // ==========================================
   // EFFECTS: AUTH & FIREBASE LISTENERS
@@ -546,1276 +549,977 @@ export default function App() {
   const latestClinicalData = history.length > 0 ? parseClinicalData(history[history.length - 1].clinical_data) : {};
   const latestPlanData = history.length > 0 ? parsePlanData(history[history.length - 1].therapeutic_plan) : null;
 
+  // ==========================================
+  // AFFICHAGE
+  // ==========================================
+  const credits = timeLeft !== null ? timeLeft : (userData?.availableTime || 0);
+  const outOfCredits = userData?.availableTime !== undefined && userData.availableTime <= 0;
+  const isLive = isConnected || isPaused;
+  const firstName = (user?.displayName || '').split(' ')[0];
+  const orbMode: OrbMode = isConnected ? (isSpeaking ? 'speaking' : 'listening') : isSaving ? 'saving' : 'idle';
+  const statusText = isConnected
+    ? isSpeaking
+      ? 'Marie parle…'
+      : 'Marie vous écoute'
+    : isSaving
+      ? 'Sauvegarde de votre dossier…'
+      : hasStarted
+        ? 'Connexion…'
+        : 'Prête quand vous l’êtes';
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const STRIPE_30 = `https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`;
+  const STRIPE_60 = `https://buy.stripe.com/00w14f6208gXdnQ56f9IQ04${user ? `?client_reference_id=${user.uid}` : ''}`;
+
   if (!isAuthReady) {
-    return <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] flex items-center justify-center"><Loader2 className="w-8 h-8 text-teal-500 animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-mist flex flex-col items-center justify-center gap-4" role="status" aria-live="polite">
+        <BreathOrb mode="saving" size={120} />
+        <span className="text-sm text-ink-soft">Chargement…</span>
+      </div>
+    );
   }
 
   if (!user) {
     return <LandingPage onLogin={handleGoogleLogin} authError={authError} />;
   }
 
-  return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#082f49_100%)] text-slate-100 grid grid-cols-1 md:grid-cols-[320px_1fr] font-sans relative overflow-hidden">
-      
-      {/* Ambient glowing orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <motion.div 
-          animate={{ 
-            x: [0, 100, -50, 0], 
-            y: [0, -50, 100, 0],
-            scale: [1, 1.1, 0.9, 1]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-teal-500/40 rounded-full blur-[100px] mix-blend-screen"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, -100, 50, 0], 
-            y: [0, 100, -50, 0],
-            scale: [1, 1.2, 0.8, 1]
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/40 rounded-full blur-[120px] mix-blend-screen"
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, 50, -100, 0], 
-            y: [0, 50, -100, 0],
-            scale: [1, 0.9, 1.1, 1]
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] left-[20%] w-[800px] h-[800px] bg-sky-500/30 rounded-full blur-[150px] mix-blend-screen"
-        />
-      </div>
+  const navItem = (onClick: () => void, Icon: typeof Calendar, label: string, color: string, badge?: React.ReactNode) => (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-mist transition-colors group"
+    >
+      <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}1a`, color }}>
+        <Icon className="w-[18px] h-[18px]" />
+      </span>
+      <span className="flex-1 font-semibold text-ink">{label}</span>
+      {badge}
+      <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-ink transition-colors" />
+    </button>
+  );
 
-      {/* Sidebar / Auth Panel */}
-      <div className="border-t md:border-t-0 md:border-r border-slate-800 bg-slate-900/30 p-6 flex flex-col order-2 md:order-1 h-full">
-        <div className="hidden md:flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
-            <MindHeartLogo className="w-5 h-5 text-teal-500" />
-          </div>
-          <h1 className="text-xl font-medium tracking-tight">Marie</h1>
+  const ListBlock = ({ icon: Icon, title, items, color }: { icon: typeof Calendar; title: string; items?: string[]; color: string }) =>
+    items && items.length > 0 ? (
+      <div className="rounded-2xl bg-mist/70 p-4">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <Icon className="w-4 h-4" style={{ color }} /> {title}
+        </h4>
+        <ul className="mt-2.5 space-y-1.5 text-[0.95rem] text-ink-soft">
+          {items.map((s, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="mt-2 w-1 h-1 rounded-full bg-ink-faint shrink-0" />
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
+  return (
+    <div className="min-h-screen bg-mist text-ink grid grid-cols-1 md:grid-cols-[300px_1fr] lg:grid-cols-[320px_1fr]">
+      {/* ================= Panneau latéral ================= */}
+      <aside className="order-2 md:order-1 bg-paper border-t md:border-t-0 md:border-r border-line flex flex-col md:h-screen md:sticky md:top-0 md:overflow-y-auto">
+        <div className="hidden md:flex items-center px-6 pt-7 pb-6">
+          <Wordmark />
         </div>
 
-        {user ? (
-          <div className="flex flex-col flex-1">
-            <div className="hidden md:block bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
-                  {user.photoURL ? <img src={user.photoURL} alt="Avatar" referrerPolicy="no-referrer" /> : <User className="w-5 h-5 text-slate-400" />}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-200">{user.displayName || user.email}</p>
-                  <p className="text-xs text-slate-500">Patient connecté</p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 mb-2">
-                <button 
-                  onClick={() => setIsCreditsPanelOpen(true)}
-                  className="w-full flex flex-col gap-2 p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors group"
-                >
-                  <div className="flex items-center gap-2 text-teal-400">
-                    <Zap className="w-4 h-4 shrink-0" /> 
-                    <span className="text-sm font-medium">Crédits: {formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
-                  </div>
-                  <div className="w-full bg-teal-500/20 text-teal-400 py-2 rounded-lg text-xs font-bold uppercase tracking-wider group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors text-center">
-                    Recharger
-                  </div>
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setShowSettings(true)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
-                >
-                  <Settings className="w-4 h-4" /> Paramètres
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-xs font-medium text-slate-300"
-                >
-                  <LogOut className="w-4 h-4" /> Déconnexion
-                </button>
-              </div>
+        {/* Compte et crédits */}
+        <div className="hidden md:block px-4">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-10 h-10 rounded-full bg-mist flex items-center justify-center overflow-hidden shrink-0">
+              {user.photoURL ? <img src={user.photoURL} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-ink-faint" />}
             </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-ink truncate">{user.displayName || user.email}</p>
+              <p className="text-sm text-ink-faint truncate">{user.email}</p>
+            </div>
+          </div>
 
-            <div className="flex-1">
-              {/* Personnalité de l'IA Toggle */}
-              <div className="mb-6">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Personnalité de l'IA</h3>
-                <div className="space-y-2">
+          <div className="mt-5 rounded-2xl bg-apricot-pale/70 border border-apricot/25 p-4">
+            <p className="text-sm text-ink-soft">Temps de séance disponible</p>
+            <p className="mt-1 font-serif text-3xl text-ink tabular-nums">{formatTime(credits).replace(' min', '')}</p>
+            <button onClick={() => setIsCreditsPanelOpen(true)} className="btn mt-3 w-full py-2.5 text-sm bg-ink text-paper hover:bg-ink/90">
+              <Zap className="w-4 h-4" /> Recharger
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4 pt-6 md:pt-7 pb-6 flex-1 space-y-7">
+          {/* Personnalité */}
+          <section>
+            <h3 className="px-2 font-sans text-sm font-semibold text-ink-faint">Personnalité de Marie</h3>
+            <div className="mt-2.5 grid grid-cols-2 gap-1 p-1 rounded-2xl bg-mist" role="radiogroup" aria-label="Personnalité de Marie">
+              {[
+                { value: false, label: 'Empathique', Icon: Heart },
+                { value: true, label: 'Électrochoc', Icon: Zap },
+              ].map(({ value, label, Icon }) => {
+                const active = isIncisiveMode === value;
+                return (
                   <button
-                    onClick={() => setIsIncisiveMode(false)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${!isIncisiveMode ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
+                    key={label}
+                    role="radio"
+                    aria-checked={active}
+                    disabled={isLive}
+                    onClick={() => setIsIncisiveMode(value)}
+                    className={`relative flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                      active ? (value ? 'text-alert' : 'text-lagoon') : 'text-ink-soft hover:text-ink'
+                    }`}
                   >
-                    <Heart className="w-4 h-4" />
-                    <span className="text-sm font-medium">Psy Empathique</span>
+                    {active && <motion.span layoutId="persona-pill" className="absolute inset-0 rounded-xl bg-paper shadow-sm" transition={{ duration: 0.2 }} />}
+                    <Icon className="relative w-4 h-4" />
+                    <span className="relative">{label}</span>
                   </button>
-                  <button
-                    onClick={() => setIsIncisiveMode(true)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${isIncisiveMode ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-slate-400 hover:bg-slate-800/50 border border-transparent'}`}
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span className="text-sm font-medium">Psy Électrochoc</span>
-                  </button>
-                </div>
-              </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 px-2 text-sm text-ink-faint leading-snug">
+              {isIncisiveMode
+                ? 'Franche et directe : Marie vous confronte à vos contradictions.'
+                : 'Douce et bienveillante : Marie vous accompagne sans brusquer.'}
+              {isLive && ' Modifiable entre deux séances.'}
+            </p>
+          </section>
 
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Vos données</h3>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => setShowHistory(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-teal-500" />
-                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Historique</span>
-                  </div>
-                  <span className="text-xs bg-slate-800 px-2 py-1 rounded-md text-slate-400">{history.length}</span>
-                </button>
-                <button 
-                  onClick={() => setShowTree(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Network className="w-4 h-4 text-indigo-500" />
-                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Arbre Thérapeutique</span>
-                  </div>
-                </button>
-                <button 
-                  onClick={() => setShowPlan(true)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-900/50 hover:bg-slate-800 transition-colors border border-slate-800/50 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm text-slate-300 group-hover:text-slate-100">Plan Thérapeutique</span>
-                  </div>
-                </button>
-              </div>
+          {/* Données */}
+          <section>
+            <h3 className="px-2 font-sans text-sm font-semibold text-ink-faint">Votre parcours</h3>
+            <nav className="mt-1.5 -mx-1">
+              {navItem(
+                () => setShowHistory(true),
+                Calendar,
+                'Historique',
+                '#1f6b72',
+                <span className="text-sm tabular-nums text-ink-soft bg-mist rounded-full px-2.5 py-0.5">{history.length}</span>,
+              )}
+              {navItem(() => setShowTree(true), Network, 'Arbre thérapeutique', '#5561c9')}
+              {navItem(() => setShowPlan(true), ClipboardList, 'Plan thérapeutique', '#c27a3e')}
+            </nav>
+          </section>
 
-              {/* Bilan Inline Section */}
-              {latestClinicalData?.recommended_therapy?.type && (
-                <div className="mt-6 pt-6 border-t border-slate-800/50">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Type de professionnel conseillé</h3>
-                  <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 blur-2xl"></div>
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Compass className="w-4 h-4 text-indigo-400" />
-                        <span className="text-sm font-bold text-indigo-300">
-                          {latestClinicalData.recommended_therapy.type}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-3" title={latestClinicalData.recommended_therapy.reason}>
-                        {latestClinicalData.recommended_therapy.reason}
-                      </p>
-                    </div>
-                  </div>
+          {latestClinicalData?.recommended_therapy?.type && (
+            <section className="rounded-2xl border border-line p-4">
+              <h3 className="font-sans text-sm font-semibold text-ink-faint flex items-center gap-2">
+                <Compass className="w-4 h-4 text-symptom" /> Professionnel conseillé
+              </h3>
+              <p className="mt-2 font-serif text-lg leading-snug text-ink">{latestClinicalData.recommended_therapy.type}</p>
+              <p className="mt-1.5 text-sm text-ink-soft leading-relaxed line-clamp-4" title={latestClinicalData.recommended_therapy.reason}>
+                {latestClinicalData.recommended_therapy.reason}
+              </p>
+            </section>
+          )}
+        </div>
+
+        <div className="hidden md:flex gap-1 px-4 py-4 border-t border-line">
+          <button onClick={() => setShowSettings(true)} className="btn btn-quiet flex-1 py-2.5 text-sm rounded-xl">
+            <Settings className="w-4 h-4" /> Paramètres
+          </button>
+          <button onClick={handleLogout} className="btn btn-quiet flex-1 py-2.5 text-sm rounded-xl">
+            <LogOut className="w-4 h-4" /> Déconnexion
+          </button>
+        </div>
+      </aside>
+
+      {/* ================= Scène de séance ================= */}
+      <main
+        className={`order-1 md:order-2 relative flex flex-col min-h-[100dvh] md:min-h-screen transition-colors duration-700 ${
+          isLive ? 'bg-dusk text-paper' : 'bg-mist text-ink'
+        }`}
+      >
+        {/* Barre mobile */}
+        <div className={`md:hidden flex items-center justify-between gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 ${isLive ? '' : 'border-b border-line bg-mist/90'}`}>
+          <span className="inline-flex items-center gap-2">
+            <MindHeartLogo className={`w-7 h-7 ${isLive ? 'text-paper' : 'text-ink'}`} />
+            <span className="font-serif text-lg">Marie</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsCreditsPanelOpen(true)}
+              className={`btn px-3 py-2 text-sm tabular-nums ${isLive ? 'bg-paper/10 text-paper' : 'bg-apricot-pale text-ink'}`}
+              aria-label={`Temps disponible ${formatTime(credits)}. Recharger`}
+            >
+              <Clock className="w-4 h-4" />
+              {formatTime(credits).replace(' min', '')}
+            </button>
+            <button onClick={() => setShowSettings(true)} className={`btn w-10 h-10 ${isLive ? 'text-paper/80 hover:bg-paper/10' : 'btn-quiet'}`} aria-label="Paramètres et confidentialité">
+              <Settings className="w-5 h-5" />
+            </button>
+            <button onClick={handleLogout} className={`btn w-10 h-10 ${isLive ? 'text-paper/80 hover:bg-paper/10' : 'btn-quiet'}`} aria-label="Déconnexion">
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 sm:py-14">
+          <div className="w-full max-w-md flex flex-col items-center text-center">
+            <AnimatePresence mode="wait">
+              {!isLive && !isSaving ? (
+                <motion.div key="welcome" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                  <h1 className="text-4xl sm:text-5xl text-ink">{firstName ? `Bonjour ${firstName}.` : 'Bonjour.'}</h1>
+                  <p className="mt-4 text-ink-soft leading-relaxed max-w-sm mx-auto">
+                    {history.length > 0
+                      ? 'Marie se souvient de vos séances précédentes. Reprenez là où vous vous étiez arrêté.'
+                      : 'Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.'}
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.p
+                  key="live"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className={`text-sm ${isLive ? 'text-paper/60' : 'text-ink-soft'}`}
+                >
+                  {isIncisiveMode ? 'Séance en mode électrochoc' : 'Séance en mode empathique'}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            {/* Lignes de souffle */}
+            <div className="relative mt-8 mb-2 w-full flex justify-center">
+              {isConnected && isSpeaking ? (
+                <button
+                  onClick={() => interrupt()}
+                  className="group relative rounded-full"
+                  aria-label="Interrompre Marie"
+                  title="Toucher pour interrompre Marie"
+                >
+                  <BreathOrb mode={orbMode} analyserNode={analyserNode} tone="dark" size={300} />
+                  <span className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-paper/10 text-paper flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                    <Hand className="w-6 h-6" />
+                  </span>
+                </button>
+              ) : (
+                <div className="relative">
+                  <BreathOrb mode={orbMode} analyserNode={analyserNode} tone={isLive ? 'dark' : 'light'} size={300} />
+                  {!isLive && !isSaving && (
+                    <span className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-paper border border-line flex items-center justify-center shadow-sm">
+                      <Mic className="w-6 h-6 text-lagoon" />
+                    </span>
+                  )}
+                  {isSaving && (
+                    <span className="absolute inset-0 m-auto w-12 h-12 flex items-center justify-center">
+                      <Loader2 className="w-7 h-7 text-lagoon animate-spin" />
+                    </span>
+                  )}
                 </div>
               )}
             </div>
+
+            <div aria-live="polite" className="min-h-[4.5rem] flex flex-col items-center gap-2">
+              <p className={`font-serif text-2xl ${isLive ? 'text-paper' : 'text-ink'}`}>{statusText}</p>
+              {isConnected && isSpeaking && <p className="text-sm text-paper/55">Touchez le cercle pour interrompre</p>}
+              {timeLeft !== null && (isLive || hasStarted) && (
+                <p className={`text-sm tabular-nums ${isLive ? 'text-paper/70' : 'text-ink-soft'}`}>Temps restant : {formatTime(timeLeft)}</p>
+              )}
+            </div>
+
+            {error && (
+              <div role="alert" className="mt-4 w-full rounded-2xl bg-alert-pale text-alert px-4 py-3 text-sm text-left flex gap-3">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              onClick={toggleSession}
+              disabled={isSaving || !user}
+              className={`btn mt-6 w-full max-w-xs py-4 text-base ${
+                isConnected
+                  ? 'bg-paper/10 text-paper hover:bg-paper/15 ring-1 ring-paper/20'
+                  : outOfCredits
+                    ? 'bg-apricot text-ink hover:bg-[#d98b4d]'
+                    : 'btn-primary shadow-[0_12px_30px_-12px_rgba(31,107,114,0.7)]'
+              }`}
+            >
+              {isConnected ? (
+                <>
+                  <Square className="w-4 h-4 fill-current" /> Terminer la séance
+                </>
+              ) : outOfCredits ? (
+                <>
+                  <Zap className="w-5 h-5" /> Recharger pour continuer
+                </>
+              ) : (
+                <>
+                  <Mic className="w-5 h-5" /> {isSaving ? 'Sauvegarde en cours…' : 'Commencer la séance'}
+                </>
+              )}
+            </button>
+
+            {!hasStarted && !isSaving && (
+              <p className="mt-6 text-sm text-ink-faint max-w-xs leading-relaxed">
+                Installez-vous dans un endroit calme. Vos échanges sont traités en temps réel ; un résumé est sauvegardé pour assurer le suivi.
+              </p>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* ================= Fenêtres ================= */}
+
+      {/* Suppression d'une séance */}
+      <Modal
+        open={!!sessionToDelete}
+        onClose={() => setSessionToDelete(null)}
+        title="Supprimer cette séance ?"
+        icon={<Trash2 className="w-6 h-6 text-alert" />}
+        size="sm"
+        zIndex={60}
+        footer={
+          <>
+            <button onClick={() => setSessionToDelete(null)} className="btn btn-outline px-5 py-2.5">Annuler</button>
+            <button onClick={confirmDeleteSession} className="btn px-5 py-2.5 bg-alert text-white hover:bg-[#961f18]">Supprimer la séance</button>
+          </>
+        }
+      >
+        <p className="text-ink-soft leading-relaxed">
+          Les éléments ajoutés à l'arbre thérapeutique lors de cette séance seront aussi supprimés. Cette action est irréversible.
+        </p>
+      </Modal>
+
+      {/* Historique */}
+      <Modal
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        title="Votre parcours"
+        description={history.length > 0 ? `${history.length} séance${history.length > 1 ? 's' : ''} enregistrée${history.length > 1 ? 's' : ''}` : undefined}
+        icon={<Calendar className="w-6 h-6 text-lagoon" />}
+        size="lg"
+      >
+        {history.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="font-serif text-xl text-ink">Aucune séance pour le moment</p>
+            <p className="mt-2 text-ink-soft">Votre première séance apparaîtra ici avec son résumé et votre plan.</p>
+            <button onClick={() => setShowHistory(false)} className="btn btn-primary mt-6 px-6 py-3">
+              <Mic className="w-4 h-4" /> Commencer une séance
+            </button>
           </div>
         ) : (
-          <div className="hidden md:flex flex-col flex-1">
-            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/50 rounded-xl p-5">
-              <h2 className="text-lg font-medium text-slate-100 mb-1">
-                Connexion
-              </h2>
-              <p className="text-xs text-slate-400 mb-6">
-                Accédez à votre dossier personnel.
-              </p>
+          <ol className="relative border-l border-line ml-2 space-y-6">
+            {history.slice().reverse().map((session, idx) => {
+              const insights = parseInsights(session.insights);
+              const clinicalData = parseClinicalData(session.clinical_data);
+              const planData = parsePlanData(session.therapeutic_plan);
+              const expanded = expandedSessionId ? expandedSessionId === session.id : idx === 0;
+              return (
+                <li key={session.id} className="pl-6 relative">
+                  <span className={`absolute -left-[7px] top-2 w-3.5 h-3.5 rounded-full border-2 border-paper ${idx === 0 ? 'bg-lagoon' : 'bg-line'}`} />
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <button
+                      onClick={() => setExpandedSessionId(expanded ? '__none__' : session.id)}
+                      aria-expanded={expanded}
+                      className="text-left flex-1 min-w-[12rem] group"
+                    >
+                      <p className="font-semibold text-ink first-letter:uppercase flex items-center gap-2">
+                        {formatDate(session.date)}
+                        <ChevronDown className={`w-4 h-4 text-ink-faint transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                      </p>
+                      {!expanded && <p className="mt-1 text-sm text-ink-soft line-clamp-2">{session.summary}</p>}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDownloadPDF(clinicalData, session.date, session.id, session.summary, insights)}
+                        className="btn btn-outline px-3 py-1.5 text-sm"
+                        title="Télécharger le dossier clinique en PDF"
+                      >
+                        {copiedSessionId === session.id ? (
+                          <>
+                            <Check className="w-4 h-4 text-lagoon" /> Téléchargé
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4" /> PDF
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSession(session.id)}
+                        className="btn btn-quiet w-9 h-9 hover:!text-alert hover:!bg-alert-pale"
+                        aria-label="Supprimer cette séance"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                {authError && <p className="text-xs text-red-400">{authError}</p>}
+                  {expanded && (
+                    <div className="mt-4 space-y-5">
+                      <p className="text-ink leading-relaxed whitespace-pre-wrap">{session.summary}</p>
 
-                <button 
-                  onClick={handleGoogleLogin}
-                  className="w-full bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Se connecter avec Google
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-col items-center justify-center p-6 relative order-1 md:order-2 h-full overflow-hidden">
-        
-        {/* Mobile Top Bar (Auth & Logo) */}
-        <div className="md:hidden w-full max-w-md mb-8 flex items-center justify-between bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-2xl p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
-              <MindHeartLogo className="w-4 h-4 text-teal-500" />
-            </div>
-            <span className="font-medium tracking-tight text-slate-100">Marie</span>
-          </div>
-          
-          {user ? (
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsCreditsPanelOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-colors text-xs font-medium text-teal-400 group whitespace-nowrap"
-              >
-                <Zap className="w-3 h-3 shrink-0" /> 
-                <span className="whitespace-nowrap">{formatTime(timeLeft !== null ? timeLeft : (userData?.availableTime || 0))}</span>
-                <span className="text-[10px] font-bold uppercase bg-teal-500/20 px-1.5 py-0.5 rounded ml-1 group-hover:bg-teal-500 group-hover:text-slate-950 transition-colors shrink-0">
-                  +
-                </span>
-              </button>
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
-                title="Paramètres et Confidentialité"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300"
-                title="Déconnexion"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <button 
-              onClick={handleGoogleLogin}
-              className="bg-teal-500 hover:bg-teal-600 text-slate-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors flex items-center gap-2"
-            >
-              <LogIn className="w-3 h-3" />
-              Connexion
-            </button>
-          )}
-        </div>
-
-        <div className="max-w-md w-full flex flex-col items-center space-y-12">
-          {/* Header */}
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center p-4 bg-slate-900 rounded-full mb-4 ring-1 ring-slate-800 shadow-xl">
-              <MindHeartLogo className="w-10 h-10 text-teal-400" />
-            </div>
-            <h1 className="text-xl font-medium tracking-tight text-slate-100">
-              Marie
-            </h1>
-            <p className="text-slate-400 text-sm max-w-xs mx-auto leading-relaxed">
-              Un espace sûr et confidentiel pour explorer vos pensées, avec une IA formée sur la littérature psychologique.
-            </p>
-            {!user && (
-              <p className="text-xs text-amber-500/80 bg-amber-500/10 py-2 px-4 rounded-full border border-amber-500/20 inline-block mt-4">
-                Connectez-vous pour commencer une séance et sauvegarder votre dossier.
-              </p>
-            )}
-          </div>
-
-        {/* Status Indicator */}
-        <div className="flex flex-col items-center justify-center h-48 w-full relative">
-          {isConnected ? (
-            <div className="relative flex items-center justify-center">
-              {/* Pulsing background when speaking */}
-              {isSpeaking && (
-                <>
-                  <div className="absolute w-28 h-28 bg-teal-500/30 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
-                  <div className="absolute w-32 h-32 bg-teal-500/20 rounded-full animate-pulse" />
-                </>
-              )}
-              <div 
-                onClick={() => {
-                  if (isSpeaking) interrupt();
-                }}
-                className={`group relative z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'bg-teal-500 shadow-[0_0_40px_rgba(20,184,166,0.4)] cursor-pointer hover:bg-red-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.4)]' : 'bg-slate-800 ring-1 ring-slate-700'}`}
-                title={isSpeaking ? "Cliquer pour interrompre l'IA" : ""}
-              >
-                {isSpeaking ? (
-                  <>
-                    <Activity className="w-10 h-10 text-slate-950 group-hover:hidden" />
-                    <X className="w-10 h-10 text-slate-950 hidden group-hover:block" />
-                  </>
-                ) : (
-                  <Activity className="w-10 h-10 text-teal-500" />
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-slate-900 ring-1 ring-slate-800 flex items-center justify-center opacity-50">
-              {isSaving ? (
-                <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
-              ) : (
-                <MicOff className="w-8 h-8 text-slate-600" />
-              )}
-            </div>
-          )}
-          
-          <div className="mt-8 text-sm font-medium tracking-wide text-slate-500 uppercase flex flex-col items-center gap-2">
-            <span>{isConnected ? (isSpeaking ? 'Le psychologue parle...' : 'À votre écoute...') : isSaving ? 'Sauvegarde du dossier...' : 'Session terminée'}</span>
-            {timeLeft !== null && (
-              <span className="text-xs text-teal-500/80 font-mono bg-teal-500/10 px-2 py-1 rounded-md">
-                Temps restant : {formatTime(timeLeft)}
-              </span>
-            )}
-          </div>
-          
-          {/* Audio Visualizer */}
-          <div className="mt-4 w-full max-w-xs">
-            <AudioVisualizer analyserNode={analyserNode} isActive={isConnected && !isSpeaking} />
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="w-full p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        {/* Controls */}
-        <button
-          onClick={toggleSession}
-          disabled={isSaving || !user}
-          className={`group relative flex items-center justify-center w-full py-4 px-8 rounded-2xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-            isConnected
-              ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 ring-1 ring-slate-800'
-              : (userData?.availableTime !== undefined && userData.availableTime <= 0)
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
-                : 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20'
-          }`}
-        >
-          {isConnected ? (
-            <>
-              <span className="mr-2">Terminer la session</span>
-            </>
-          ) : (
-            <>
-              {(userData?.availableTime !== undefined && userData.availableTime <= 0) ? (
-                <>
-                  <Zap className="w-5 h-5 mr-2" />
-                  <span>Recharger pour continuer</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="w-5 h-5 mr-2" />
-                  <span>{isSaving ? 'Sauvegarde en cours...' : 'Commencer la session'}</span>
-                </>
-              )}
-            </>
-          )}
-        </button>
-
-        {/* Footer info */}
-        {!hasStarted && (
-          <p className="text-xs text-slate-600 text-center max-w-xs">
-            Assurez-vous d'être dans un endroit calme. Vos échanges sont traités en temps réel. Un résumé clinique est sauvegardé pour assurer le suivi.
-          </p>
-        )}
-        </div>
-      </div>
-
-      {/* History Modal */}
-      {/* Delete Confirmation Modal */}
-      {sessionToDelete && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-xl font-medium text-slate-100 mb-4 flex items-center">
-              <AlertTriangle className="w-5 h-5 mr-3 text-red-500" />
-              Supprimer la séance
-            </h3>
-            <p className="text-slate-400 mb-6">
-              Êtes-vous sûr de vouloir supprimer cette séance ? Cela supprimera également les ajouts à l'arbre thérapeutique qui y sont liés. Cette action est irréversible.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setSessionToDelete(null)}
-                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmDeleteSession}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-xl font-medium text-slate-100 flex items-center">
-                <MindHeartLogo className="w-5 h-5 mr-3 text-teal-500" />
-                Votre Parcours Thérapeutique
-              </h2>
-              <button 
-                onClick={() => setShowHistory(false)}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 space-y-8">
-              {history.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">Aucune session enregistrée pour le moment.</p>
-              ) : (
-                <>
-                  <div className="space-y-8">
-                    {history.slice().reverse().map((session) => {
-                      const insights = parseInsights(session.insights);
-                      const clinicalData = parseClinicalData(session.clinical_data);
-                      const planData = parsePlanData(session.therapeutic_plan);
-                      
-                      return (
-                        <div key={session.id} className="space-y-4">
-                      <div className="flex items-start justify-between text-sm font-medium text-slate-400">
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(session.date).toLocaleDateString('fr-FR', { 
-                              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                              hour: '2-digit', minute: '2-digit'
-                            })}
-                          </div>
-                          <button
-                            onClick={() => handleDownloadPDF(clinicalData, session.date, session.id, session.summary, insights)}
-                            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50 w-fit"
-                            title="Télécharger le dossier clinique"
-                          >
-                            {copiedSessionId === session.id ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-teal-500" />
-                                <span className="text-teal-500">Téléchargé</span>
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Télécharger</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteSession(session.id)}
-                          className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-400/10"
-                          title="Supprimer cette séance"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50 space-y-4">
+                      {insights.length > 0 && (
                         <div>
-                          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Résumé de la séance</h3>
-                          <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                            {session.summary}
-                          </p>
+                          <h3 className="font-sans text-sm font-semibold text-lagoon flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" /> Prises de conscience
+                          </h3>
+                          <ul className="mt-2 space-y-2">
+                            {insights.map((insight: string, i: number) => (
+                              <li key={i} className="font-serif text-[1.05rem] leading-snug text-ink border-l-2 border-lagoon/50 pl-3">
+                                {insight}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        
-                        {insights.length > 0 && (
-                          <div className="pt-4 border-t border-slate-800/50">
-                            <h3 className="text-xs font-semibold text-teal-500/80 uppercase tracking-wider mb-3 flex items-center">
-                              <Sparkles className="w-3 h-3 mr-1.5" />
-                              Prises de conscience (Insights)
-                            </h3>
-                            <ul className="space-y-2">
-                              {insights.map((insight: string, idx: number) => (
-                                <li key={idx} className="text-sm text-slate-200 bg-teal-500/5 border border-teal-500/10 rounded-lg p-3 flex items-start">
-                                  <span className="text-teal-500 mr-2 mt-0.5">•</span>
-                                  <span className="leading-relaxed">{insight}</span>
+                      )}
+
+                      {Object.keys(clinicalData).length > 0 && (
+                        <div>
+                          <h3 className="font-sans text-sm font-semibold text-symptom flex items-center gap-2">
+                            <FileText className="w-4 h-4" /> Notes cliniques (dossier de transfert)
+                          </h3>
+                          <div className="mt-2 grid sm:grid-cols-2 gap-2.5">
+                            {clinicalData.emotional_state && (
+                              <div className="sm:col-span-2 rounded-2xl bg-mist/70 p-4">
+                                <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+                                  <HeartPulse className="w-4 h-4 text-root" /> État émotionnel
+                                </h4>
+                                <p className="mt-2 text-[0.95rem] text-ink-soft">{clinicalData.emotional_state}</p>
+                              </div>
+                            )}
+                            <ListBlock icon={Stethoscope} title="Symptômes" items={clinicalData.symptoms} color="#5561c9" />
+                            <ListBlock icon={AlertTriangle} title="Déclencheurs" items={clinicalData.triggers} color="#c27a3e" />
+                            <div className="sm:col-span-2">
+                              <ListBlock icon={ShieldCheck} title="Mécanismes de défense et d’adaptation" items={clinicalData.defense_mechanisms} color="#2a8c86" />
+                            </div>
+                            {clinicalData.risk_assessment && (
+                              <div className="sm:col-span-2 rounded-2xl bg-mist/70 p-4">
+                                <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+                                  <AlertTriangle className="w-4 h-4 text-alert" /> Évaluation des risques
+                                </h4>
+                                <p className="mt-2 text-[0.95rem] text-ink-soft">{clinicalData.risk_assessment}</p>
+                              </div>
+                            )}
+                            {clinicalData.recommended_therapy?.type && (
+                              <div className="sm:col-span-2 rounded-2xl bg-symptom/10 p-4">
+                                <h4 className="flex items-center gap-2 text-sm font-semibold text-symptom">
+                                  <Compass className="w-4 h-4" /> Recommandation thérapeutique
+                                </h4>
+                                <p className="mt-2 font-serif text-lg text-ink">{clinicalData.recommended_therapy.type}</p>
+                                <p className="mt-1 text-[0.95rem] text-ink-soft leading-relaxed">{clinicalData.recommended_therapy.reason}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {planData && planData.focus && (
+                        <div className="rounded-2xl border border-apricot/40 bg-apricot-pale/50 p-4">
+                          <h3 className="font-sans text-sm font-semibold text-[#a3622c] flex items-center gap-2">
+                            <Target className="w-4 h-4" /> Plan d'action
+                          </h3>
+                          <p className="mt-2 font-serif text-lg text-ink">{planData.focus}</p>
+                          {planData.actions && planData.actions.length > 0 && (
+                            <ul className="mt-3 space-y-2">
+                              {planData.actions.map((action: string, i: number) => (
+                                <li key={i} className="flex gap-2.5 text-[0.95rem] text-ink">
+                                  <CheckCircle2 className="w-4 h-4 text-lagoon shrink-0 mt-1" />
+                                  <span>{action}</span>
                                 </li>
                               ))}
                             </ul>
-                          </div>
-                        )}
-
-                        {/* Clinical Data Section */}
-                        {Object.keys(clinicalData).length > 0 && (
-                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h3 className="text-xs font-semibold text-blue-400/80 uppercase tracking-wider flex items-center">
-                                <FileText className="w-3 h-3 mr-1.5" />
-                                Notes Cliniques (Dossier de transfert)
-                              </h3>
+                          )}
+                          {planData.hygiene_and_wellbeing && planData.hygiene_and_wellbeing.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-apricot/30">
+                              <h4 className="text-sm font-semibold text-root flex items-center gap-2">
+                                <Heart className="w-4 h-4" /> Hygiène mentale et bien-être
+                              </h4>
+                              <ul className="mt-2 space-y-1.5">
+                                {planData.hygiene_and_wellbeing.map((item: string, i: number) => (
+                                  <li key={i} className="flex gap-2.5 text-[0.95rem] text-ink-soft">
+                                    <Sparkles className="w-4 h-4 text-root shrink-0 mt-1" />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {clinicalData.emotional_state && (
-                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50 md:col-span-2">
-                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
-                                    <HeartPulse className="w-3 h-3 mr-1.5 text-rose-400" /> État Émotionnel
-                                  </h4>
-                                  <p className="text-sm text-slate-300">{clinicalData.emotional_state}</p>
-                                </div>
-                              )}
-                              
-                              {clinicalData.symptoms && clinicalData.symptoms.length > 0 && (
-                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
-                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
-                                    <Stethoscope className="w-3 h-3 mr-1.5" /> Symptômes
-                                  </h4>
-                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
-                                    {clinicalData.symptoms.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              {clinicalData.triggers && clinicalData.triggers.length > 0 && (
-                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
-                                  <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
-                                    <AlertTriangle className="w-3 h-3 mr-1.5" /> Déclencheurs
-                                  </h4>
-                                  <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
-                                    {clinicalData.triggers.map((t: string, i: number) => <li key={i}>{t}</li>)}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-
-                            {clinicalData.defense_mechanisms && clinicalData.defense_mechanisms.length > 0 && (
-                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
-                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
-                                  <ShieldCheck className="w-3 h-3 mr-1.5" /> Mécanismes de défense / adaptation
-                                </h4>
-                                <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
-                                  {clinicalData.defense_mechanisms.map((d: string, i: number) => <li key={i}>{d}</li>)}
-                                </ul>
-                              </div>
-                            )}
-
-                            {clinicalData.risk_assessment && (
-                              <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800/50">
-                                <h4 className="text-xs font-medium text-slate-400 flex items-center mb-2">
-                                  <AlertTriangle className="w-3 h-3 mr-1.5 text-orange-400" /> Évaluation des risques
-                                </h4>
-                                <p className="text-sm text-slate-300">{clinicalData.risk_assessment}</p>
-                              </div>
-                            )}
-
-                            {clinicalData.recommended_therapy?.type && (
-                              <div className="bg-indigo-500/10 rounded-lg p-3 border border-indigo-500/20 md:col-span-2">
-                                <h4 className="text-xs font-medium text-indigo-400 flex items-center mb-2">
-                                  <Compass className="w-3 h-3 mr-1.5" /> Recommandation Thérapeutique
-                                </h4>
-                                <p className="text-sm font-bold text-indigo-300">{clinicalData.recommended_therapy.type}</p>
-                                <p className="text-sm text-indigo-200/80 mt-1 leading-relaxed">{clinicalData.recommended_therapy.reason}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Therapeutic Plan Section */}
-                        {planData && planData.focus && (
-                          <div className="pt-4 border-t border-slate-800/50 space-y-4">
-                            <h3 className="text-xs font-semibold text-amber-500/80 uppercase tracking-wider mb-3 flex items-center">
-                              <Target className="w-3 h-3 mr-1.5" />
-                              Plan d'Action
-                            </h3>
-                            
-                            <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/10">
-                              <h4 className="text-sm font-medium text-amber-400 mb-2">Objectif : {planData.focus}</h4>
-                              
-                              {planData.actions && planData.actions.length > 0 && (
-                                <ul className="space-y-2 mt-3">
-                                  {planData.actions.map((action: string, idx: number) => (
-                                    <li key={idx} className="text-sm text-slate-300 flex items-start">
-                                      <CheckCircle2 className="w-4 h-4 text-teal-500 mr-2 flex-shrink-0 mt-0.5" />
-                                      <span>{action}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-
-                              {planData.hygiene_and_wellbeing && planData.hygiene_and_wellbeing.length > 0 && (
-                                <div className="mt-4 pt-3 border-t border-amber-500/10">
-                                  <h4 className="text-xs font-semibold text-rose-400/80 uppercase tracking-wider mb-2 flex items-center">
-                                    <Heart className="w-3 h-3 mr-1.5" />
-                                    Hygiène Mentale & Bien-être
-                                  </h4>
-                                  <ul className="space-y-2">
-                                    {planData.hygiene_and_wellbeing.map((item: string, idx: number) => (
-                                      <li key={idx} className="text-sm text-slate-300 flex items-start">
-                                        <Sparkles className="w-4 h-4 text-rose-400 mr-2 flex-shrink-0 mt-0.5" />
-                                        <span>{item}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              {planData.adjustments && (
-                                <div className="mt-4 pt-3 border-t border-amber-500/10">
-                                  <p className="text-xs text-amber-500/70 uppercase tracking-wider mb-1">Ajustements</p>
-                                  <p className="text-sm text-slate-400">{planData.adjustments}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tree Modal */}
-      {showTree && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md">
-          <div className="bg-slate-900/40 backdrop-blur-xl rounded-[24px] w-full max-w-5xl h-[85vh] flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.4)] border border-slate-800/50 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-20">
-              <button 
-                onClick={() => setShowTree(false)}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors absolute left-4"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-lg font-semibold text-slate-100 w-full flex items-center justify-center gap-2">
-                <Network className="w-5 h-5 text-indigo-400" />
-                Arbre Thérapeutique
-                <div className="group relative flex items-center">
-                  <Info className="w-4 h-4 text-slate-400 cursor-help hover:text-teal-400 transition-colors" />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-3 bg-slate-800/90 backdrop-blur-md text-xs text-slate-200 rounded-xl border border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none text-center font-normal">
-                    Cette carte visuelle relie vos <span className="text-[#2DD4BF] font-medium">émotions</span>, vos <span className="text-[#818CF8] font-medium">symptômes</span> et leurs <span className="text-[#F472B6] font-medium">causes profondes</span> pour vous aider à comprendre votre progression.
-                  </div>
-                </div>
-              </h2>
-              <div className="w-9" /> {/* Spacer for centering */}
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 flex flex-col bg-slate-950/30">
-              {history.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <p className="text-slate-500 text-center">Aucun arbre disponible pour le moment.</p>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0 bg-slate-900/40 backdrop-blur-md rounded-2xl border border-slate-800/50 overflow-hidden shadow-sm">
-                  {latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
-                    <TherapyTree data={latestTreeData} />
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-slate-500 text-center">L'arbre thérapeutique est en cours de construction.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Therapeutic Plan Modal */}
-      {showPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-xl font-medium text-slate-100 flex items-center">
-                <ClipboardList className="w-5 h-5 mr-3 text-amber-500" />
-                Plan Thérapeutique
-              </h2>
-              <button 
-                onClick={() => setShowPlan(false)}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 space-y-8">
-              {history.length === 0 || !latestPlanData || !latestPlanData.focus ? (
-                <div className="text-center py-12">
-                  <Target className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                  <p className="text-slate-400">Aucun plan thérapeutique n'a encore été généré.</p>
-                  <p className="text-slate-500 text-sm mt-2">Un plan sera proposé à la fin de votre prochaine séance.</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                    <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider flex items-center mb-3 relative z-10">
-                      <Target className="w-4 h-4 mr-2" /> Objectif Principal
-                    </h3>
-                    <p className="text-slate-200 text-lg relative z-10 font-medium">
-                      {latestPlanData.focus}
-                    </p>
-                  </div>
-
-                  {latestPlanData.actions && latestPlanData.actions.length > 0 && (
-                    <div className="bg-slate-950/50 border border-slate-800/50 rounded-xl p-6">
-                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-4">
-                        <CheckCircle2 className="w-4 h-4 mr-2 text-teal-500" /> Actions & Exercices Recommandés
-                      </h3>
-                      <ul className="space-y-3">
-                        {latestPlanData.actions.map((action: string, idx: number) => (
-                          <li key={idx} className="flex items-start">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
-                              {idx + 1}
-                            </span>
-                            <span className="text-slate-300 leading-relaxed">{action}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {latestPlanData.hygiene_and_wellbeing && latestPlanData.hygiene_and_wellbeing.length > 0 && (
-                    <div className="bg-rose-950/20 border border-rose-900/30 rounded-xl p-6">
-                      <h3 className="text-sm font-semibold text-rose-400 uppercase tracking-wider flex items-center mb-4">
-                        <Heart className="w-4 h-4 mr-2 text-rose-500" /> Hygiène Mentale & Bien-être
-                      </h3>
-                      <ul className="space-y-3">
-                        {latestPlanData.hygiene_and_wellbeing.map((item: string, idx: number) => (
-                          <li key={idx} className="flex items-start">
-                            <Sparkles className="w-5 h-5 text-rose-400 mr-3 flex-shrink-0 mt-0.5" />
-                            <span className="text-slate-300 leading-relaxed">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {latestPlanData.adjustments && (
-                    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-xl p-6">
-                      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center mb-3">
-                        <Activity className="w-4 h-4 mr-2 text-blue-400" /> Ajustements & Remarques
-                      </h3>
-                      <p className="text-slate-300 leading-relaxed">
-                        {latestPlanData.adjustments}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="text-center mt-8">
-                    <p className="text-xs text-slate-500">
-                      Ce plan sera évalué et ajusté avec vous lors de la prochaine séance.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-md flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-xl font-medium text-slate-100 flex items-center">
-                <Settings className="w-5 h-5 mr-3 text-slate-400" />
-                Paramètres & Confidentialité
-              </h2>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Préférences</h3>
-
-                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-slate-200">Langue parlée</p>
-                      <p className="text-xs text-slate-500">Choisissez la langue de l'IA.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {[
-                      { code: 'fr', flagCode: 'fr', label: 'Français' },
-                      { code: 'en', flagCode: 'gb', label: 'English' },
-                      { code: 'de', flagCode: 'de', label: 'Deutsch' },
-                      { code: 'es', flagCode: 'es', label: 'Español' }
-                    ].map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => {
-                          setLanguage(lang.code);
-                          localStorage.setItem('marie_language', lang.code);
-                        }}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-transform hover:scale-105 border-2 overflow-hidden ${
-                          language === lang.code 
-                            ? 'border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)]' 
-                            : 'border-slate-700 bg-slate-900 opacity-70 hover:opacity-100 hover:border-slate-500'
-                        }`}
-                        title={lang.label}
-                      >
-                        <img 
-                          src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
-                          srcSet={`https://flagcdn.com/w80/${lang.flagCode}.png 2x`}
-                          width="40" 
-                          alt={lang.label}
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                  <div className="flex items-center gap-3">
-                    <Volume2 className="w-5 h-5 text-teal-400 flex-shrink-0" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-slate-200">Voix de l'assistant</p>
-                      <p className="text-xs text-slate-500">Choisissez la voix qui vous convient le mieux.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <select 
-                      value={voiceName}
-                      onChange={(e) => {
-                        setVoiceName(e.target.value);
-                        localStorage.setItem('marie_voice', e.target.value);
-                      }}
-                      className="flex-1 sm:flex-none bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block p-2"
-                    >
-                      <option value="Zephyr">Zephyr</option>
-                      <option value="Kore">Kore</option>
-                      <option value="Puck">Puck</option>
-                      <option value="Charon">Charon</option>
-                      <option value="Fenrir">Fenrir</option>
-                    </select>
-                    <button
-                      onClick={handlePreviewVoice}
-                      disabled={isPreviewing}
-                      className="p-2 rounded-lg bg-teal-500/10 text-teal-500 hover:bg-teal-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Écouter un aperçu"
-                    >
-                      {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Données Personnelles (RGPD)</h3>
-                
-                <button 
-                  onClick={() => {
-                    setShowSettings(false);
-                    setShowPrivacyPolicy(true);
-                  }}
-                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-teal-400" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Politique de confidentialité</p>
-                      <p className="text-xs text-slate-500">Consulter les règles de traitement de vos données.</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={handleDownloadData}
-                  className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors border border-slate-700/50 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Download className="w-5 h-5 text-blue-400" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">Exporter mes données</p>
-                      <p className="text-xs text-slate-500">Télécharger tout l'historique de vos séances au format JSON.</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    if (window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre compte et toutes vos données ? Cette action est irréversible.")) {
-                      handleDeleteAccount();
-                    }
-                  }}
-                  disabled={isDeletingAccount}
-                  className="w-full flex items-center justify-between p-4 rounded-xl bg-red-950/20 hover:bg-red-950/40 transition-colors border border-red-900/30 group disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center gap-3">
-                    {isDeletingAccount ? <Loader2 className="w-5 h-5 text-red-500 animate-spin" /> : <Trash2 className="w-5 h-5 text-red-500" />}
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-red-400 group-hover:text-red-300">Supprimer mon compte</p>
-                      <p className="text-xs text-red-500/70">Effacer définitivement toutes vos données de nos serveurs.</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Emergency Modal */}
-      {showEmergencyModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-red-950/90 backdrop-blur-md">
-          <div className="bg-slate-900 border border-red-500/50 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl overflow-hidden">
-            <div className="bg-red-500/10 p-6 border-b border-red-500/20">
-              <h2 className="text-2xl font-medium text-red-400 flex items-center">
-                <AlertTriangle className="w-6 h-6 mr-3" />
-                Besoin d'aide immédiate ?
-              </h2>
-            </div>
-            
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
-              <p className="text-slate-300 leading-relaxed">
-                Il semble que vous traversiez un moment extrêmement difficile. Votre sécurité et votre bien-être sont notre priorité absolue. 
-                <strong className="text-white block mt-2">Vous n'êtes pas seul(e) et de l'aide est disponible immédiatement, 24h/24 et 7j/7.</strong>
-              </p>
-
-              <div className="space-y-4">
-                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                  <h3 className="text-lg font-medium text-white mb-2">Numéros d'urgence (Gratuits)</h3>
-                  <ul className="space-y-3">
-                    <li className="flex items-center justify-between">
-                      <span className="text-slate-300">Urgences Générales (Europe)</span>
-                      <a href="tel:112" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">112</a>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-slate-300">SAMU (France)</span>
-                      <a href="tel:15" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">15</a>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-slate-300">Prévention Suicide (France)</span>
-                      <a href="tel:3114" className="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-colors">3114</a>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="text-slate-300">SOS Amitié (France)</span>
-                      <a href="tel:0972394050" className="bg-slate-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors">09 72 39 40 50</a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <p className="text-sm text-slate-400 italic">
-                S'il vous plaît, contactez l'un de ces services ou rendez-vous aux urgences les plus proches. Des professionnels sont là pour vous écouter sans jugement et vous aider à traverser cette épreuve.
-              </p>
-            </div>
-            
-            <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end">
-              <button
-                onClick={() => setShowEmergencyModal(false)}
-                className="px-6 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                J'ai compris
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Consent Modal */}
-      {showConsentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-lg flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-slate-800">
-              <h2 className="text-2xl font-medium text-slate-100 flex items-center">
-                <ShieldCheck className="w-6 h-6 mr-3 text-teal-500" />
-                Création de compte & Consentement
-              </h2>
-            </div>
-            
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Bienvenue sur Marie. Pour finaliser la création de votre compte, nous avons besoin de votre consentement explicite concernant le traitement de vos données. Cette étape n'est requise qu'une seule fois.
-              </p>
-
-              <div className="space-y-4">
-                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
-                  <div className="flex items-start gap-3 p-4">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <input 
-                        type="checkbox" 
-                        checked={consentTOS}
-                        onChange={(e) => setConsentTOS(e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
-                      />
-                    </div>
-                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedTOS(!expandedTOS)}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-200">Conditions Générales d'Utilisation</p>
-                        {expandedTOS ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-                      </div>
-                      {expandedTOS && (
-                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
-                          <p><strong>1. Nature du Service :</strong> Marie est un outil expérimental d'accompagnement basé sur l'Intelligence Artificielle. Ce service <strong>N'EST PAS</strong> un dispositif médical, ne propose pas de télémédecine, et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
-                          <p><strong>2. Urgences :</strong> Marie n'est pas conçu pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
-                          <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte (hallucinations). Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
-                          <p><strong>4. Responsabilité :</strong> L'éditeur de Marie décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques et périls.</p>
-                          <p><strong>5. Âge requis :</strong> L'utilisation de ce service est strictement réservée aux personnes majeures (18 ans et plus).</p>
+                          )}
+                          {planData.adjustments && (
+                            <p className="mt-4 pt-3 border-t border-apricot/30 text-sm text-ink-soft">
+                              <span className="font-semibold text-ink">Ajustements : </span>
+                              {planData.adjustments}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Modal>
 
-                <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
-                  <div className="flex items-start gap-3 p-4">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <input 
-                        type="checkbox" 
-                        checked={consentHealthData}
-                        onChange={(e) => setConsentHealthData(e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-900 cursor-pointer"
-                      />
-                    </div>
-                    <div className="flex-1 cursor-pointer" onClick={() => setExpandedHealth(!expandedHealth)}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-200">Traitement des Données Sensibles (RGPD)</p>
-                        {expandedHealth ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-                      </div>
-                      {expandedHealth && (
-                        <div className="mt-3 text-xs text-slate-400 space-y-3 pr-4 max-h-48 overflow-y-auto">
-                          <p><strong>1. Consentement Explicite (Art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistant Marie.</p>
-                          <p><strong>2. Données collectées et Anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.) qui est la seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
-                          <p><strong>3. Sous-traitants & IA Privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>strictement pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
-                          <p><strong>4. Vos Droits :</strong> Conformément à la réglementation, vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application intègre des fonctionnalités vous permettant d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique en un clic depuis les paramètres.</p>
-                          <p><strong>5. Durée de conservation :</strong> Vos données sont conservées uniquement tant que votre compte est actif. La suppression de votre compte entraîne l'effacement immédiat et irréversible de vos données de nos serveurs.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* Arbre thérapeutique */}
+      <Modal
+        open={showTree}
+        onClose={() => setShowTree(false)}
+        title="Arbre thérapeutique"
+        description="Cette carte relie vos émotions, vos symptômes et leurs causes profondes pour vous aider à comprendre votre progression. Touchez un point pour le lire."
+        icon={<Network className="w-6 h-6 text-symptom" />}
+        size="xl"
+      >
+        <div className="h-[62dvh] min-h-[420px] flex flex-col">
+          {history.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center rounded-2xl bg-mist text-center px-6">
+              <p className="text-ink-soft">Aucun arbre pour le moment : il se dessine après votre première séance.</p>
             </div>
-
-            <div className="p-6 border-t border-slate-800 flex justify-end gap-3">
-              <button 
-                onClick={handleLogout}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-              >
-                Refuser et se déconnecter
-              </button>
-              <button 
-                onClick={handleConsentSubmit}
-                disabled={!consentTOS || !consentHealthData}
-                className="px-6 py-2 rounded-lg text-sm font-medium bg-teal-500 hover:bg-teal-600 text-slate-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Créer mon compte
-              </button>
+          ) : latestTreeData.nodes && latestTreeData.nodes.length > 0 ? (
+            <TherapyTree data={latestTreeData} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center rounded-2xl bg-mist">
+              <p className="text-ink-soft">L'arbre thérapeutique est en cours de construction.</p>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </Modal>
 
-      {/* Privacy Policy Modal */}
-      {showPrivacyPolicy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-2xl w-full max-w-2xl flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-xl font-medium text-slate-100 flex items-center">
-                <ShieldCheck className="w-5 h-5 mr-3 text-teal-500" />
-                Politique de Confidentialité
-              </h2>
-              <button 
-                onClick={() => setShowPrivacyPolicy(false)}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* Plan thérapeutique */}
+      <Modal
+        open={showPlan}
+        onClose={() => setShowPlan(false)}
+        title="Plan thérapeutique"
+        description={latestPlanData?.focus ? 'Ce plan sera évalué et ajusté avec vous lors de la prochaine séance.' : undefined}
+        icon={<ClipboardList className="w-6 h-6 text-[#c27a3e]" />}
+        size="lg"
+      >
+        {history.length === 0 || !latestPlanData || !latestPlanData.focus ? (
+          <div className="py-12 text-center">
+            <Target className="w-10 h-10 text-ink-faint mx-auto" strokeWidth={1.5} />
+            <p className="mt-4 font-serif text-xl text-ink">Pas encore de plan</p>
+            <p className="mt-2 text-ink-soft">Un plan vous sera proposé à la fin de votre prochaine séance.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="rounded-3xl bg-ink text-paper p-6 sm:p-7">
+              <p className="text-sm text-paper/60 flex items-center gap-2">
+                <Target className="w-4 h-4 text-apricot" /> Objectif principal
+              </p>
+              <p className="mt-2 font-serif text-2xl leading-snug">{latestPlanData.focus}</p>
             </div>
-            
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] text-sm text-slate-300">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-100">1. Introduction</h3>
-                <p>
-                  La présente politique de confidentialité explique comment Marie collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.
-                </p>
 
-                <h3 className="text-lg font-medium text-slate-100">2. Données collectées</h3>
-                <p>
-                  <strong>Données de compte :</strong> Lors de votre connexion via Google, nous collectons votre adresse email, votre nom d'utilisateur et votre photo de profil fournis par Google.
-                </p>
-                <p>
-                  <strong>Données de santé (Sensibles) :</strong> Les conversations vocales et textuelles que vous avez avec l'IA peuvent contenir des données de santé mentale. Ces données sont traitées en temps réel.
-                </p>
-                <p>
-                  <strong>Données générées :</strong> L'IA génère des résumés, des analyses cliniques et des plans thérapeutiques basés sur vos conversations.
-                </p>
+            {latestPlanData.actions && latestPlanData.actions.length > 0 && (
+              <section>
+                <h3 className="text-xl">Actions et exercices</h3>
+                <ol className="mt-3 space-y-3">
+                  {latestPlanData.actions.map((action: string, idx: number) => (
+                    <li key={idx} className="flex gap-3.5">
+                      <span className="w-7 h-7 shrink-0 rounded-full border border-ink/20 flex items-center justify-center font-serif text-sm text-ink mt-0.5">{idx + 1}</span>
+                      <span className="text-ink leading-relaxed">{action}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
 
-                <h3 className="text-lg font-medium text-slate-100">3. Utilisation des données et IA Privée</h3>
-                <p>
-                  Vos données sont utilisées <strong>exclusivement</strong> pour vous fournir le service d'accompagnement psychologique.
-                </p>
-                <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-4 text-teal-400">
-                  <strong>Garantie de non-entraînement :</strong> Nous utilisons une infrastructure payante (Google Cloud API). Vos données vocales et textuelles <strong>ne sont pas utilisées</strong> par Google ou par nous-mêmes pour entraîner, améliorer ou perfectionner des modèles d'intelligence artificielle.
-                </div>
-
-                <h3 className="text-lg font-medium text-slate-100">4. Stockage et Sécurité</h3>
-                <p>
-                  Vos résumés et analyses sont stockés de manière sécurisée sur les serveurs de Firebase (Google Cloud). Les flux audio en temps réel ne sont <strong>pas stockés</strong> après leur traitement immédiat.
-                </p>
-
-                <h3 className="text-lg font-medium text-slate-100">5. Vos droits (RGPD)</h3>
-                <p>
-                  Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants :
-                </p>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li><strong>Droit d'accès et de portabilité :</strong> Vous pouvez télécharger l'intégralité de vos données au format JSON depuis les paramètres.</li>
-                  <li><strong>Droit à l'effacement (Droit à l'oubli) :</strong> Vous pouvez supprimer définitivement votre compte et toutes vos données associées en un clic depuis les paramètres.</li>
-                  <li><strong>Droit de rectification :</strong> Vous pouvez modifier les informations de votre profil via votre compte Google.</li>
+            {latestPlanData.hygiene_and_wellbeing && latestPlanData.hygiene_and_wellbeing.length > 0 && (
+              <section className="rounded-2xl bg-root/8 border border-root/20 p-5">
+                <h3 className="text-xl flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-root" /> Hygiène mentale et bien-être
+                </h3>
+                <ul className="mt-3 space-y-2.5">
+                  {latestPlanData.hygiene_and_wellbeing.map((item: string, idx: number) => (
+                    <li key={idx} className="flex gap-3 text-ink leading-relaxed">
+                      <Sparkles className="w-4 h-4 text-root shrink-0 mt-1.5" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
                 </ul>
+              </section>
+            )}
 
-                <h3 className="text-lg font-medium text-slate-100">6. Cookies et Traceurs</h3>
-                <p>
-                  Marie n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).
-                </p>
+            {latestPlanData.adjustments && (
+              <section className="rounded-2xl bg-mist p-5">
+                <h3 className="font-sans text-sm font-semibold text-ink-soft">Ajustements et remarques</h3>
+                <p className="mt-2 text-ink leading-relaxed">{latestPlanData.adjustments}</p>
+              </section>
+            )}
+          </div>
+        )}
+      </Modal>
 
-                <h3 className="text-lg font-medium text-slate-100">7. Mentions Légales</h3>
-                <p>
-                  <strong>Éditeur du service :</strong> Marie<br />
-                  <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (Serveurs de données situés à Londres, Royaume-Uni - région <em>europe-west2</em>, en stricte conformité avec le RGPD).
-                </p>
-
-                <h3 className="text-lg font-medium text-slate-100">8. Contact et Exercice de vos droits</h3>
-                <p>
-                  Pour toute question relative à la protection de vos données personnelles, ou pour exercer vos droits (accès, rectification, suppression), vous pouvez nous contacter directement à l'adresse suivante :
-                </p>
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 inline-block">
-                  <a href="mailto:julyand36@gmail.com" className="text-teal-400 hover:text-teal-300 font-medium">
-                    julyand36@gmail.com
-                  </a>
-                </div>
+      {/* Paramètres */}
+      <Modal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Paramètres et confidentialité"
+        icon={<Settings className="w-6 h-6 text-ink-soft" />}
+        size="md"
+      >
+        <div className="space-y-8">
+          <section className="space-y-5">
+            <div>
+              <h3 className="flex items-center gap-2 font-sans font-semibold text-ink">
+                <Globe className="w-4 h-4 text-lagoon" /> Langue de la séance
+              </h3>
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Langue de la séance">
+                {[
+                  { code: 'fr', label: 'Français' },
+                  { code: 'en', label: 'English' },
+                  { code: 'de', label: 'Deutsch' },
+                  { code: 'es', label: 'Español' },
+                ].map((lang) => (
+                  <button
+                    key={lang.code}
+                    role="radio"
+                    aria-checked={language === lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      localStorage.setItem('marie_language', lang.code);
+                    }}
+                    className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+                      language === lang.code ? 'border-lagoon bg-lagoon-pale text-lagoon-deep' : 'border-line text-ink-soft hover:border-ink-faint'
+                    }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Credits Panel Modal */}
-      {isCreditsPanelOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-8 text-center space-y-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-medium text-slate-100 flex items-center gap-2">
-                  <Zap className="w-6 h-6 text-teal-500" />
-                  Recharger vos crédits
-                </h2>
-                <button 
-                  onClick={() => setIsCreditsPanelOpen(false)}
-                  className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <p className="text-slate-400 text-sm leading-relaxed text-left">
-                Marie fonctionne avec un système de crédits de temps. Vous ne payez que pour le temps de séance que vous consommez. Le temps non utilisé est conservé pour vos prochaines séances.
-              </p>
-
-              <div className="space-y-4">
-                {/* 30 Minutes Option */}
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
-                      <div className="text-slate-500 text-sm">Séance standard</div>
-                    </div>
-                    <div className="text-xl font-semibold text-teal-400">13 €</div>
-                  </div>
-                  <a 
-                    href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Acheter 30 minutes
-                  </a>
-                </div>
-
-                {/* 1 Hour Option */}
-                <div className="bg-slate-800/50 border border-teal-500/30 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-teal-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
-                    Recommandé
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-left">
-                      <div className="text-slate-100 font-medium">Forfait 1 heure</div>
-                      <div className="text-slate-500 text-sm">Thérapie approfondie</div>
-                    </div>
-                    <div className="text-xl font-semibold text-teal-400">20 €</div>
-                  </div>
-                  <a 
-                    href={`https://buy.stripe.com/00w14f6208gXdnQ56f9IQ04${user ? `?client_reference_id=${user.uid}` : ''}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Acheter 1 heure
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Paywall Modal */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-teal-500/30 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-8 text-center space-y-6">
-              <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto">
-                <Calendar className="w-8 h-8 text-teal-500" />
-              </div>
-              
-              <div className="space-y-2">
-                <h2 className="text-2xl font-medium text-slate-100">Temps écoulé</h2>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Votre crédit de temps gratuit (5 minutes) est épuisé. Pour continuer votre thérapie et soutenir le développement de Marie, vous pouvez recharger votre compte.
-                </p>
-              </div>
-
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between">
-                <div className="text-left">
-                  <div className="text-slate-100 font-medium">Forfait 30 minutes</div>
-                  <div className="text-slate-500 text-sm">Séance prolongée</div>
-                </div>
-                <div className="text-xl font-semibold text-teal-400">13 €</div>
-              </div>
-
-              <div className="flex flex-col gap-3 pt-4">
-                <a 
-                  href={`https://buy.stripe.com/cNi9AL8a8bt9cjM1U39IQ03${user ? `?client_reference_id=${user.uid}` : ''}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white py-3 px-4 rounded-xl font-medium transition-colors"
-                >
-                  <Zap className="w-5 h-5" />
-                  Acheter 30 minutes
-                </a>
-
-                <button 
-                  onClick={() => {
-                    disconnect(false);
-                    setIsPaused(false);
-                    setHasStarted(false);
-                    setShowPaywall(false);
+            <div>
+              <h3 className="flex items-center gap-2 font-sans font-semibold text-ink">
+                <Volume2 className="w-4 h-4 text-lagoon" /> Voix de Marie
+              </h3>
+              <div className="mt-3 flex gap-2">
+                <select
+                  value={voiceName}
+                  onChange={(e) => {
+                    setVoiceName(e.target.value);
+                    localStorage.setItem('marie_voice', e.target.value);
                   }}
-                  className="w-full py-3 px-4 text-slate-500 hover:text-slate-300 text-sm font-medium transition-colors"
+                  className="field flex-1"
+                  aria-label="Voix de Marie"
                 >
-                  Fermer et terminer la séance
+                  <option value="Zephyr">Zephyr</option>
+                  <option value="Kore">Kore</option>
+                  <option value="Puck">Puck</option>
+                  <option value="Charon">Charon</option>
+                  <option value="Fenrir">Fenrir</option>
+                </select>
+                <button onClick={handlePreviewVoice} disabled={isPreviewing} className="btn btn-outline px-4 rounded-xl">
+                  {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  Écouter
                 </button>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section>
+            <h3 className="font-sans font-semibold text-ink">Vos données personnelles</h3>
+            <div className="mt-2 divide-y divide-line border-y border-line">
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowPrivacyPolicy(true);
+                }}
+                className="w-full flex items-center gap-3 py-3.5 text-left group"
+              >
+                <ShieldCheck className="w-5 h-5 text-lagoon shrink-0" />
+                <span className="flex-1">
+                  <span className="block font-semibold text-ink">Politique de confidentialité</span>
+                  <span className="block text-sm text-ink-soft">Comment vos données sont traitées</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-ink" />
+              </button>
+              <button onClick={handleDownloadData} className="w-full flex items-center gap-3 py-3.5 text-left group">
+                <Download className="w-5 h-5 text-symptom shrink-0" />
+                <span className="flex-1">
+                  <span className="block font-semibold text-ink">Exporter mes données</span>
+                  <span className="block text-sm text-ink-soft">Tout l'historique de vos séances, au format JSON</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-ink" />
+              </button>
+              <button
+                onClick={() => setConfirmDeleteAccount(true)}
+                disabled={isDeletingAccount}
+                className="w-full flex items-center gap-3 py-3.5 text-left group disabled:opacity-50"
+              >
+                {isDeletingAccount ? <Loader2 className="w-5 h-5 text-alert animate-spin shrink-0" /> : <Trash2 className="w-5 h-5 text-alert shrink-0" />}
+                <span className="flex-1">
+                  <span className="block font-semibold text-alert">Supprimer mon compte</span>
+                  <span className="block text-sm text-ink-soft">Efface définitivement toutes vos données</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-ink-faint group-hover:text-alert" />
+              </button>
+            </div>
+          </section>
         </div>
-      )}
+      </Modal>
+
+      {/* Confirmation de suppression du compte */}
+      <Modal
+        open={confirmDeleteAccount}
+        onClose={() => setConfirmDeleteAccount(false)}
+        title="Supprimer votre compte ?"
+        icon={<AlertTriangle className="w-6 h-6 text-alert" />}
+        size="sm"
+        zIndex={70}
+        footer={
+          <>
+            <button onClick={() => setConfirmDeleteAccount(false)} className="btn btn-outline px-5 py-2.5">Annuler</button>
+            <button
+              onClick={() => {
+                setConfirmDeleteAccount(false);
+                handleDeleteAccount();
+              }}
+              className="btn px-5 py-2.5 bg-alert text-white hover:bg-[#961f18]"
+            >
+              Supprimer définitivement
+            </button>
+          </>
+        }
+      >
+        <p className="text-ink-soft leading-relaxed">
+          Votre compte, vos séances, votre arbre et vos plans seront effacés de nos serveurs. Cette action est irréversible. Pensez à exporter vos données avant si vous souhaitez les garder.
+        </p>
+      </Modal>
+
+      {/* Urgence */}
+      <Modal
+        open={showEmergencyModal}
+        onClose={() => setShowEmergencyModal(false)}
+        title="Besoin d'aide tout de suite ?"
+        icon={<AlertTriangle className="w-7 h-7 text-alert" />}
+        tone="alert"
+        size="md"
+        zIndex={100}
+        footer={
+          <button onClick={() => setShowEmergencyModal(false)} className="btn btn-outline px-6 py-2.5">
+            J'ai compris
+          </button>
+        }
+      >
+        <p className="text-ink leading-relaxed">
+          Il semble que vous traversiez un moment très difficile. Votre sécurité passe avant tout.
+        </p>
+        <p className="mt-2 font-semibold text-ink">Vous n'êtes pas seul(e) : de l'aide est disponible maintenant, 24 h/24 et 7 j/7.</p>
+        <ul className="mt-5 space-y-2">
+          {[
+            { label: 'Prévention du suicide', sub: 'France, gratuit', tel: '3114', show: '3114', strong: true },
+            { label: 'SAMU', sub: 'France', tel: '15', show: '15', strong: true },
+            { label: 'Urgences européennes', sub: 'Partout en Europe', tel: '112', show: '112', strong: true },
+            { label: 'SOS Amitié', sub: 'Écoute, France', tel: '0972394050', show: '09 72 39 40 50', strong: false },
+          ].map((n) => (
+            <li key={n.tel}>
+              <a
+                href={`tel:${n.tel}`}
+                className={`flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-colors ${n.strong ? 'bg-alert-pale hover:bg-[#f2d2cf]' : 'bg-mist hover:bg-line/60'}`}
+              >
+                <Phone className={`w-5 h-5 shrink-0 ${n.strong ? 'text-alert' : 'text-ink-soft'}`} />
+                <span className="flex-1">
+                  <span className="block font-semibold text-ink">{n.label}</span>
+                  <span className="block text-sm text-ink-soft">{n.sub}</span>
+                </span>
+                <span className={`font-serif text-2xl tabular-nums ${n.strong ? 'text-alert' : 'text-ink'}`}>{n.show}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-sm text-ink-soft">
+          Contactez l'un de ces services ou rendez-vous aux urgences les plus proches. Des professionnels sont là pour vous écouter, sans jugement.
+        </p>
+      </Modal>
+
+      {/* Consentement */}
+      <Modal
+        open={showConsentModal}
+        title="Bienvenue sur Marie"
+        description="Avant votre première séance, nous avons besoin de votre accord explicite. Cette étape n'est demandée qu'une fois."
+        icon={<ShieldCheck className="w-6 h-6 text-lagoon" />}
+        size="md"
+        dismissible={false}
+        footer={
+          <>
+            <button onClick={handleLogout} className="btn btn-quiet px-5 py-2.5">
+              Refuser et me déconnecter
+            </button>
+            <button onClick={handleConsentSubmit} disabled={!consentTOS || !consentHealthData} className="btn btn-primary px-6 py-2.5">
+              <Check className="w-4 h-4" /> Créer mon compte
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {[
+            {
+              checked: consentTOS,
+              set: setConsentTOS,
+              expanded: expandedTOS,
+              toggle: () => setExpandedTOS(!expandedTOS),
+              title: "J'accepte les conditions générales d'utilisation",
+              body: (
+                <>
+                  <p><strong>1. Nature du service :</strong> Marie est un outil expérimental d'accompagnement basé sur l'intelligence artificielle. Ce service <strong>n'est pas</strong> un dispositif médical, ne propose pas de télémédecine et ne remplace en aucun cas une consultation, un diagnostic ou un traitement par un médecin, un psychiatre ou un psychologue diplômé.</p>
+                  <p><strong>2. Urgences :</strong> Marie n'est pas conçue pour gérer les crises ou les urgences. En cas de détresse psychologique aiguë, de pensées suicidaires ou d'urgence médicale, contactez immédiatement les secours (15, 112) ou le numéro national de prévention du suicide (3114 en France).</p>
+                  <p><strong>3. Limites de l'IA :</strong> L'intelligence artificielle peut générer des réponses inexactes, inappropriées ou hors contexte. Vous acceptez de ne pas prendre de décisions médicales, financières, légales ou vitales sur la base des échanges avec cette IA.</p>
+                  <p><strong>4. Responsabilité :</strong> L'éditeur de Marie décline toute responsabilité quant aux conséquences directes ou indirectes liées à l'utilisation de l'application. L'utilisation se fait à vos propres risques.</p>
+                  <p><strong>5. Âge requis :</strong> L'utilisation de ce service est strictement réservée aux personnes majeures (18 ans et plus).</p>
+                </>
+              ),
+            },
+            {
+              checked: consentHealthData,
+              set: setConsentHealthData,
+              expanded: expandedHealth,
+              toggle: () => setExpandedHealth(!expandedHealth),
+              title: "J'accepte le traitement de mes données de santé (RGPD)",
+              body: (
+                <>
+                  <p><strong>1. Consentement explicite (art. 9 RGPD) :</strong> En cochant cette case, vous consentez expressément à la collecte et au traitement de données à caractère personnel pouvant révéler des informations sur votre santé physique ou mentale, dans le but exclusif de faire fonctionner l'assistante Marie.</p>
+                  <p><strong>2. Données collectées et anonymisation :</strong> Nous traitons vos entrées vocales et textuelles. L'audio n'est pas conservé après transcription. L'IA génère une version anonymisée de vos échanges (suppression des noms, lieux, etc.), seule version sauvegardée dans votre historique. Nous vous recommandons néanmoins de ne pas partager d'informations d'identification directe (nom de famille, adresse exacte, numéro de sécurité sociale).</p>
+                  <p><strong>3. Sous-traitants et IA privée :</strong> Le traitement de vos requêtes implique l'utilisation de modèles de langage de Google Cloud. <strong>Nous utilisons une clé API payante et sécurisée.</strong> Vos données vocales et textuelles sont traitées de manière éphémère et ne sont <strong>pas utilisées</strong> pour entraîner les modèles d'intelligence artificielle de Google ou d'autres tiers.</p>
+                  <p><strong>4. Vos droits :</strong> Vous disposez d'un droit d'accès, de rectification, d'effacement (droit à l'oubli), de limitation et de portabilité de vos données. L'application vous permet d'exporter vos données (format JSON) ou de supprimer définitivement votre compte et l'intégralité de votre historique depuis les paramètres.</p>
+                  <p><strong>5. Durée de conservation :</strong> Vos données sont conservées uniquement tant que votre compte est actif. La suppression de votre compte entraîne l'effacement immédiat et irréversible de vos données de nos serveurs.</p>
+                </>
+              ),
+            },
+          ].map((c) => (
+            <div key={c.title} className={`rounded-2xl border transition-colors ${c.checked ? 'border-lagoon bg-lagoon-pale/40' : 'border-line'}`}>
+              <div className="flex items-start gap-3 p-4">
+                <input
+                  type="checkbox"
+                  checked={c.checked}
+                  onChange={(e) => c.set(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 shrink-0 cursor-pointer"
+                  aria-label={c.title}
+                />
+                <div className="flex-1">
+                  <p className="font-semibold text-ink leading-snug">{c.title}</p>
+                  <button onClick={c.toggle} aria-expanded={c.expanded} className="mt-1 text-sm font-semibold text-lagoon hover:text-lagoon-deep inline-flex items-center gap-1">
+                    {c.expanded ? 'Masquer le détail' : 'Lire le détail'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${c.expanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {c.expanded && <div className="mt-3 text-sm text-ink-soft space-y-2.5 leading-relaxed max-h-56 overflow-y-auto pr-2">{c.body}</div>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      {/* Politique de confidentialité */}
+      <Modal
+        open={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
+        title="Politique de confidentialité"
+        icon={<ShieldCheck className="w-6 h-6 text-lagoon" />}
+        size="lg"
+      >
+        <div className="text-ink-soft leading-relaxed space-y-3 max-w-[68ch] [&_h3]:text-xl [&_h3]:text-ink [&_h3]:pt-4 [&_strong]:text-ink">
+          <h3>1. Introduction</h3>
+          <p>La présente politique de confidentialité explique comment Marie collecte, utilise et protège vos données personnelles. En utilisant notre application, vous acceptez les pratiques décrites dans ce document.</p>
+          <h3>2. Données collectées</h3>
+          <p><strong>Données de compte :</strong> lors de votre connexion via Google, nous collectons votre adresse e-mail, votre nom d'utilisateur et votre photo de profil fournis par Google.</p>
+          <p><strong>Données de santé (sensibles) :</strong> les conversations vocales et textuelles que vous avez avec l'IA peuvent contenir des données de santé mentale. Ces données sont traitées en temps réel.</p>
+          <p><strong>Données générées :</strong> l'IA génère des résumés, des analyses cliniques et des plans thérapeutiques basés sur vos conversations.</p>
+          <h3>3. Utilisation des données et IA privée</h3>
+          <p>Vos données sont utilisées <strong>exclusivement</strong> pour vous fournir le service d'accompagnement psychologique.</p>
+          <p className="rounded-2xl bg-lagoon-pale/60 text-lagoon-deep p-4">
+            <strong className="!text-lagoon-deep">Garantie de non-entraînement :</strong> nous utilisons une infrastructure payante (Google Cloud API). Vos données vocales et textuelles <strong className="!text-lagoon-deep">ne sont pas utilisées</strong> par Google ou par nous-mêmes pour entraîner, améliorer ou perfectionner des modèles d'intelligence artificielle.
+          </p>
+          <h3>4. Stockage et sécurité</h3>
+          <p>Vos résumés et analyses sont stockés de manière sécurisée sur les serveurs de Firebase (Google Cloud). Les flux audio en temps réel ne sont <strong>pas stockés</strong> après leur traitement immédiat.</p>
+          <h3>5. Vos droits (RGPD)</h3>
+          <p>Conformément au Règlement général sur la protection des données (RGPD), vous disposez des droits suivants :</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Droit d'accès et de portabilité :</strong> vous pouvez télécharger l'intégralité de vos données au format JSON depuis les paramètres.</li>
+            <li><strong>Droit à l'effacement (droit à l'oubli) :</strong> vous pouvez supprimer définitivement votre compte et toutes vos données associées depuis les paramètres.</li>
+            <li><strong>Droit de rectification :</strong> vous pouvez modifier les informations de votre profil via votre compte Google.</li>
+          </ul>
+          <h3>6. Cookies et traceurs</h3>
+          <p>Marie n'utilise <strong>aucun cookie publicitaire ou de traçage</strong> (pas de Google Analytics, pas de Pixel Meta, etc.). Les seuls cookies utilisés sont des cookies techniques strictement nécessaires à l'authentification (Firebase Auth).</p>
+          <h3>7. Mentions légales</h3>
+          <p>
+            <strong>Éditeur du service :</strong> Marie<br />
+            <strong>Hébergeur :</strong> Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande (serveurs de données situés à Londres, Royaume-Uni, région <em>europe-west2</em>, en conformité avec le RGPD).
+          </p>
+          <h3>8. Contact et exercice de vos droits</h3>
+          <p>Pour toute question relative à la protection de vos données personnelles, ou pour exercer vos droits (accès, rectification, suppression), contactez-nous :</p>
+          <a href="mailto:julyand36@gmail.com" className="inline-block font-semibold text-lagoon underline underline-offset-4">julyand36@gmail.com</a>
+        </div>
+      </Modal>
+
+      {/* Recharger les crédits */}
+      <Modal
+        open={isCreditsPanelOpen}
+        onClose={() => setIsCreditsPanelOpen(false)}
+        title="Recharger votre temps"
+        description="Vous ne payez que le temps de séance consommé. Le temps non utilisé est conservé pour vos prochaines séances."
+        icon={<Clock className="w-6 h-6 text-apricot" />}
+        size="sm"
+        zIndex={60}
+      >
+        <p className="text-sm text-ink-soft">
+          Solde actuel : <span className="font-semibold text-ink tabular-nums">{formatTime(credits)}</span>
+        </p>
+        <div className="mt-4 space-y-3">
+          {[
+            { title: '30 minutes', sub: 'Une séance standard', price: '13 €', href: STRIPE_30, recommended: false },
+            { title: '1 heure', sub: 'Pour un travail en profondeur', price: '20 €', href: STRIPE_60, recommended: true },
+          ].map((o) => (
+            <a
+              key={o.title}
+              href={o.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`relative flex items-center gap-4 rounded-2xl border p-4 transition-colors ${
+                o.recommended ? 'border-lagoon bg-lagoon-pale/40 hover:bg-lagoon-pale/70' : 'border-line hover:border-ink-faint'
+              }`}
+            >
+              <span className="flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="font-serif text-xl text-ink">{o.title}</span>
+                  {o.recommended && <span className="text-xs font-semibold text-paper bg-lagoon rounded-full px-2 py-0.5">Le plus avantageux</span>}
+                </span>
+                <span className="block text-sm text-ink-soft">{o.sub}</span>
+              </span>
+              <span className="font-serif text-2xl text-ink">{o.price}</span>
+            </a>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-ink-faint">Paiement sécurisé par Stripe. Votre temps est crédité automatiquement après le paiement.</p>
+      </Modal>
+
+      {/* Temps écoulé */}
+      <Modal
+        open={showPaywall}
+        title="Votre temps est écoulé"
+        description="Votre crédit de temps est épuisé. Rechargez pour reprendre la séance là où vous en étiez : elle se relance automatiquement."
+        icon={<Clock className="w-6 h-6 text-apricot" />}
+        size="sm"
+        zIndex={60}
+        dismissible={false}
+        footer={
+          <button
+            onClick={() => {
+              disconnect(false);
+              setIsPaused(false);
+              setHasStarted(false);
+              setShowPaywall(false);
+            }}
+            className="btn btn-quiet px-5 py-2.5 w-full sm:w-auto"
+          >
+            Terminer la séance
+          </button>
+        }
+      >
+        <div className="space-y-3">
+          <a href={STRIPE_30} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-2xl border border-lagoon bg-lagoon-pale/40 hover:bg-lagoon-pale/70 p-4 transition-colors">
+            <span className="flex-1">
+              <span className="block font-serif text-xl text-ink">30 minutes</span>
+              <span className="block text-sm text-ink-soft">Pour prolonger la séance</span>
+            </span>
+            <span className="font-serif text-2xl text-ink">13 €</span>
+          </a>
+          <a href={STRIPE_60} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-2xl border border-line hover:border-ink-faint p-4 transition-colors">
+            <span className="flex-1">
+              <span className="block font-serif text-xl text-ink">1 heure</span>
+              <span className="block text-sm text-ink-soft">Pour un travail en profondeur</span>
+            </span>
+            <span className="font-serif text-2xl text-ink">20 €</span>
+          </a>
+        </div>
+      </Modal>
     </div>
   );
 }
